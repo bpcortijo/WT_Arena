@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class CharacterStats : MonoBehaviour
 {
-	UnitBasics basics;
+	public UnitBasics basics;
 	public int speed = 2;
+	public GameObject[] shotTypes;
 	public List<string> loadout, actions;
 	public string currentAction, nextAction, attack;
 	public bool attacking;
@@ -54,5 +55,23 @@ public class CharacterStats : MonoBehaviour
 
 		nextAction = "";
 		currentAction = "";
+	}
+
+	public void FireAt (GameObject target)
+	{
+		foreach (GameObject ammo in shotTypes)
+		{
+			if (ammo.name == attack) {
+				GameObject shot = Instantiate(ammo,transform.position,Quaternion.identity);
+				ShotScript ss = shot.GetComponent<ShotScript>();
+				UnitBasics tb = target.GetComponent<UnitBasics>();
+
+				ss.owner = transform.parent.gameObject;
+				basics.map.selectedUnit = shot;
+				basics.map.GeneratePathTo(tb.tileX, tb.tileY, tb.tileZ);
+
+				basics.map.selectedUnit = gameObject;
+			}
+		}
 	}
 }

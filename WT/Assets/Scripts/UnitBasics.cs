@@ -44,7 +44,6 @@ public class UnitBasics : MonoBehaviour {
 	{
 		for (int s = 0; s < speed; s++)
 		{
-			Debug.Log("Move");
 			if (currentPath == null)
 				return;
 			currentPath.RemoveAt(0);

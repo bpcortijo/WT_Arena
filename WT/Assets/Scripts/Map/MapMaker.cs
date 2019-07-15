@@ -242,7 +242,33 @@ public class MapMaker : MonoBehaviour {
 		// Check if straight shot is firing straight
 		if (selectedUnit.GetComponent<CharacterStats>() != null)
 		{
+			CharacterStats cs = selectedUnit.GetComponent<CharacterStats>();
+			if (cs.attacking)
+				switch (cs.attack)
+				{
+					case "Straight":
+						float dX, dY, dZ;
+						float planeXY, planeXZ, planeYZ;
+						dX = x - cs.basics.tileX;
+						dY = y - cs.basics.tileY;
+						dZ = z - cs.basics.tileZ;
+						planeXY = dX / dY;
+						planeYZ = dZ / dY;
+						planeXZ = dX / dZ;
 
+						if (planeXY == -1 || planeXY == 0 || planeXY == 1 ||
+							planeXY == Mathf.Infinity || planeXY == -Mathf.Infinity || float.IsNaN(planeXY))
+							if (planeYZ == -1 || planeYZ == 0 || planeYZ == 1 || 
+								planeYZ == Mathf.Infinity || planeYZ == -Mathf.Infinity || float.IsNaN(planeYZ))
+								if (planeXZ == -1 || planeXZ == 0 || planeXZ == 1 || 
+									planeXZ == Mathf.Infinity || planeXZ == -Mathf.Infinity || float.IsNaN(planeXZ))
+									break;
+						return;
+					case "Hunter":
+						break;
+					default:
+						break;
+				}
 		}
 
 		// Clear out our unit's old path.
@@ -445,6 +471,17 @@ public class MapMaker : MonoBehaviour {
 		viableSpawns.Remove(viableSpawns[num]);
 		return spawnPoint;
     }
+
+	public void Select(GameObject go)
+	{
+		if (selectedUnit != null)
+			if (selectedUnit.GetComponent<CharacterStats>().attacking)
+			{
+				selectedUnit.GetComponent<CharacterStats>().FireAt(go);
+				return;
+			}
+		selectedUnit = go;
+	}
 
     public class Node
     {

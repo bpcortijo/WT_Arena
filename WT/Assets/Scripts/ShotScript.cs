@@ -6,7 +6,7 @@ public class ShotScript : MonoBehaviour
 {
 	MapMaker map;
 	UnitBasics basics;
-	public GameObject target;
+	public GameObject target, owner;
 	public int speed, power, range;
 
 	void Start()
