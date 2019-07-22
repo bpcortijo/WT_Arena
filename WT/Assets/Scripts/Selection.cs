@@ -13,6 +13,6 @@ public class Selection : MonoBehaviour {
 
     private void OnMouseUp()
     {
-        map.Select(gameObject.transform.parent.gameObject);
+		map.Select(gameObject.transform.parent.gameObject);
     }
 }

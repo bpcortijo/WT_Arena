@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class ManagementScript : MonoBehaviour {
-	PlayerScript pCode;
+	MapMaker mapCode;
 	public GameObject map;
-	public MapMaker mapCode;
 	public List<GameObject> startingPlayers, players;
 
-	public int turn = 0, playersLeft = 1, endTurnRequests = 0;
+	public int turn = 1, playersLeft = 1, endTurnRequests = 0;
 
 	void Start()
 	{
@@ -22,7 +21,6 @@ public class ManagementScript : MonoBehaviour {
     {
 		if (endTurnRequests == playersLeft && endTurnRequests != 0)
 			NextTurn();
-			
     }
 
     void NextTurn()
@@ -33,6 +31,10 @@ public class ManagementScript : MonoBehaviour {
 			PlayerScript player = p.GetComponent<PlayerScript>();
 			player.TakeTurn();
 		}
+
+		foreach (GameObject a in GameObject.FindGameObjectsWithTag("Attack"))
+			a.GetComponent<UnitBasics>().Move();
+
 		turn++;
 		StartCoroutine(EndTurn());
 		foreach (GameObject p in players)

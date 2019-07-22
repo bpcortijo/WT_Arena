@@ -20,7 +20,7 @@ public class PlayerScript : MonoBehaviour
 	{
 		foreach (GameObject character in characters)
 		{
-			GameObject spawnPoint = gm.mapCode.SpawnPoint();
+			GameObject spawnPoint = gm.map.GetComponent<MapMaker>().SpawnPoint();
 			GameObject unit = Instantiate(character, new Vector3(spawnPoint.transform.position.x,
 																	spawnPoint.transform.position.y,
 																	spawnPoint.transform.position.z),
@@ -28,7 +28,7 @@ public class PlayerScript : MonoBehaviour
 
 			unit.transform.parent = this.transform;
 
-			unit.GetComponent<UnitBasics>().map = gm.mapCode;
+			unit.GetComponent<UnitBasics>().map = gm.map.GetComponent<MapMaker>();
 			unit.GetComponent<UnitBasics>().tileX = (int)unit.transform.position.x;
 			unit.GetComponent<UnitBasics>().tileY = (int)unit.transform.position.y;
 			unit.GetComponent<UnitBasics>().tileZ = (int)unit.transform.position.z;
@@ -38,7 +38,7 @@ public class PlayerScript : MonoBehaviour
 
 	private void Update()
 	{
-		if (Input.GetKeyUp(KeyCode.Return)&&canEnd)
+		if (Input.GetKeyUp(KeyCode.Return) && canEnd)
 		{
 			canEnd = false;
 			PlayerEndTurn();
@@ -64,11 +64,5 @@ public class PlayerScript : MonoBehaviour
 	{
 		foreach (GameObject unit in units)
 			unit.GetComponent<CharacterStats>().TakeActions();
-	}
-
-	public void SetAction()
-	{
-		foreach (GameObject unit in units)
-			unit.GetComponent<CharacterStats>().actions.Add(unit.GetComponent<CharacterStats>().currentAction);
 	}
 }

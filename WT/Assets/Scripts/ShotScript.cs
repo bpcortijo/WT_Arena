@@ -5,16 +5,24 @@ using UnityEngine;
 public class ShotScript : MonoBehaviour
 {
 	MapMaker map;
-	UnitBasics basics;
+	public UnitBasics basics;
 	public GameObject target, owner;
 	public int speed, power, range;
 
 	void Start()
+	{
+		map = owner.GetComponent<UnitBasics>().map;
+		basics.map = map;
+	}
+
+	void Update()
     {
-		basics = gameObject.GetComponent<UnitBasics>();
-		basics.speed = speed;
-		basics.turns = range;
-		basics.CheckPath();
+		if (map.selectedUnit != gameObject)
+			if (basics.currentPath == null || basics.currentPath.Count == 1)
+			{
+				owner.GetComponent<CharacterStats>().CancelAction();
+				Destroy(gameObject);
+			}
 	}
 
 	public void Attack()
@@ -49,6 +57,11 @@ public class ShotScript : MonoBehaviour
 		map.GeneratePathTo(targetX, targetY, targetZ);
 
 		map.selectedUnit = prevUnit;
+	}
+
+	public void VectorClear()
+	{
+
 	}
 
 	public void Hit()

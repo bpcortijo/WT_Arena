@@ -10,7 +10,6 @@ public class TileScript : MonoBehaviour {
 		Debug.Log ("Click!");
 
 		map.GeneratePathTo(tileX, tileY, tileZ);
-		map.selectedUnit.GetComponent<CharacterStats>().currentAction = "move";
 	}
 
 }

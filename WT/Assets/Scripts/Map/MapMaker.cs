@@ -239,53 +239,26 @@ public class MapMaker : MonoBehaviour {
 	}
 
 	public void GeneratePathTo(int x, int y, int z) {
-		// Check if straight shot is firing straight
-		if (selectedUnit.GetComponent<CharacterStats>() != null)
-		{
-			CharacterStats cs = selectedUnit.GetComponent<CharacterStats>();
-			if (cs.attacking)
-				switch (cs.attack)
-				{
-					case "Straight":
-						float dX, dY, dZ;
-						float planeXY, planeXZ, planeYZ;
-						dX = x - cs.basics.tileX;
-						dY = y - cs.basics.tileY;
-						dZ = z - cs.basics.tileZ;
-						planeXY = dX / dY;
-						planeYZ = dZ / dY;
-						planeXZ = dX / dZ;
-
-						if (planeXY == -1 || planeXY == 0 || planeXY == 1 ||
-							planeXY == Mathf.Infinity || planeXY == -Mathf.Infinity || float.IsNaN(planeXY))
-							if (planeYZ == -1 || planeYZ == 0 || planeYZ == 1 || 
-								planeYZ == Mathf.Infinity || planeYZ == -Mathf.Infinity || float.IsNaN(planeYZ))
-								if (planeXZ == -1 || planeXZ == 0 || planeXZ == 1 || 
-									planeXZ == Mathf.Infinity || planeXZ == -Mathf.Infinity || float.IsNaN(planeXZ))
-									break;
-						return;
-					case "Hunter":
-						break;
-					default:
-						break;
-				}
-		}
-
 		// Clear out our unit's old path.
+		Node source = null;
+		List<Node> currentPath = new List<Node>();
 
-		selectedUnit.GetComponent<UnitBasics>().currentPath = null;
+		UnitBasics unit = selectedUnit.GetComponent<UnitBasics>();
+
+		if (!unit.vector || unit.currentPath == null)
+			source = graph[
+					unit.tileX,
+					unit.tileY,
+					unit.tileZ
+					];
+		else
+			source = unit.currentPath[unit.currentPath.Count - 1];
 
 		Dictionary<Node, float> dist = new Dictionary<Node, float>();
 		Dictionary<Node, Node> prev = new Dictionary<Node, Node>();
 
 		// Setup the "Q" -- the list of nodes we haven't checked yet.
 		List<Node> unvisited = new List<Node>();
-		
-		Node source = graph[
-		                    selectedUnit.GetComponent<UnitBasics>().tileX, 
-		                    selectedUnit.GetComponent<UnitBasics>().tileY,
-                            selectedUnit.GetComponent<UnitBasics>().tileZ
-                            ];
 
         Node target = graph[x, y, z];
 		
@@ -341,8 +314,6 @@ public class MapMaker : MonoBehaviour {
 			return;
 		}
 
-		List<Node> currentPath = new List<Node>();
-
 		Node currentStep = target;
 
 		// Step through the "prev" chain and add it to our path
@@ -355,10 +326,12 @@ public class MapMaker : MonoBehaviour {
 		// So we need to invert it!
 
 		currentPath.Reverse();
-
-		selectedUnit.GetComponent<UnitBasics>().currentPath = currentPath;
-		selectedUnit.GetComponent<UnitBasics>().CheckPath();
-
+		if (!unit.vector || unit.currentPath == null)
+			unit.currentPath = currentPath;
+		else
+			for (int n = 1; n < currentPath.Count; n++)
+				unit.currentPath.Add(currentPath[n]);
+		unit.CheckPath();
 	}
 
 	float CostToEnter(int currentX, int currentY, int currentZ, int newX, int newY, int newZ)
@@ -474,12 +447,6 @@ public class MapMaker : MonoBehaviour {
 
 	public void Select(GameObject go)
 	{
-		if (selectedUnit != null)
-			if (selectedUnit.GetComponent<CharacterStats>().attacking)
-			{
-				selectedUnit.GetComponent<CharacterStats>().FireAt(go);
-				return;
-			}
 		selectedUnit = go;
 	}
 
