@@ -7,9 +7,9 @@ public class TileScript : MonoBehaviour {
     public bool floor, ceiling, northViable, westViable, eastViable, southViable;
 
 	void OnMouseUp() {
-		Debug.Log ("Click!");
-
+		if (map.selectedUnit.GetComponent<ShotScript>() != null)
+			if (map.selectedUnit.GetComponent<ShotScript>().set)
+				return;
 		map.GeneratePathTo(tileX, tileY, tileZ);
 	}
-
 }

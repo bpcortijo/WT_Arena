@@ -240,6 +240,10 @@ public class MapMaker : MonoBehaviour {
 
 	public void GeneratePathTo(int x, int y, int z) {
 		// Clear out our unit's old path.
+		if (selectedUnit.name == "Z" || selectedUnit.name == "Composite")
+			if (!selectedUnit.GetComponent<UnitBasics>().CheckSlope(x, y, z))
+				return;
+
 		Node source = null;
 		List<Node> currentPath = new List<Node>();
 
@@ -261,7 +265,10 @@ public class MapMaker : MonoBehaviour {
 		List<Node> unvisited = new List<Node>();
 
         Node target = graph[x, y, z];
-		
+
+		if (selectedUnit.GetComponent<ShotScript>() != null)
+			selectedUnit.GetComponent<ShotScript>().lastKeyPoint = target;
+
 		dist[source] = 0;
 		prev[source] = null;
 
@@ -348,6 +355,17 @@ public class MapMaker : MonoBehaviour {
                 cost += .001f;
             return cost;
         }
+		else if (selectedUnit.tag=="Shot")
+		{
+			float cost = 1;
+			if (newX != currentX)
+				cost += .001f;
+			if (newY != currentY)
+				cost += .001f;
+			if (newZ != currentZ)
+				cost += .001f;
+			return cost;
+		}
         else
             return 99f;
     }

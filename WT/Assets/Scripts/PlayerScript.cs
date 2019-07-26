@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class PlayerScript : MonoBehaviour
 {
+	public bool canEnd;
 	ManagementScript gm;
 	public List<GameObject> units, characters;
-	public bool canEnd;
 
 	private void Start()
 	{
@@ -49,6 +49,7 @@ public class PlayerScript : MonoBehaviour
 			canEnd = true;
 			gm.endTurnRequests--;
 		}
+
 	}
 	public void PlayerEndTurn()
 	{

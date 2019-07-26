@@ -32,8 +32,11 @@ public class ManagementScript : MonoBehaviour {
 			player.TakeTurn();
 		}
 
-		foreach (GameObject a in GameObject.FindGameObjectsWithTag("Attack"))
-			a.GetComponent<UnitBasics>().Move();
+		foreach (GameObject a in GameObject.FindGameObjectsWithTag("Shot"))
+		{
+			a.GetComponent<ShotScript>().set = true;
+			a.GetComponent<ShotScript>().Attack();
+		}
 
 		turn++;
 		StartCoroutine(EndTurn());

@@ -5,14 +5,18 @@ using UnityEngine;
 public class ShotScript : MonoBehaviour
 {
 	MapMaker map;
+	public bool set = false;
 	public UnitBasics basics;
-	public GameObject target, owner;
 	public int speed, power, range;
+	public GameObject target, owner;
+	public MapMaker.Node lastKeyPoint;
 
 	void Start()
 	{
 		map = owner.GetComponent<UnitBasics>().map;
 		basics.map = map;
+		basics.speed = speed;
+		basics.turns = range;
 	}
 
 	void Update()
@@ -21,15 +25,21 @@ public class ShotScript : MonoBehaviour
 			if (basics.currentPath == null || basics.currentPath.Count == 1)
 			{
 				owner.GetComponent<CharacterStats>().CancelAction();
+				Debug.Log("RIP");
 				Destroy(gameObject);
 			}
+		if (Input.GetMouseButtonUp(1) && !set)
+		{
+			if (map.selectedUnit = gameObject)
+				ShotClear();
+		}
 	}
 
 	public void Attack()
 	{
 		basics.Move();
 		basics.turns--;
-		if (gameObject.name == "Hunter")
+		if (gameObject.name == "X")
 		{
 			Hunter();
 			basics.CheckPath();
@@ -59,13 +69,35 @@ public class ShotScript : MonoBehaviour
 		map.selectedUnit = prevUnit;
 	}
 
-	public void VectorClear()
+	public void ShotClear()
 	{
-
+		int n = basics.currentPath.Count - 1;
+		while (basics.currentPath[n] != lastKeyPoint)
+		{
+			basics.currentPath.Remove(basics.currentPath[n]);
+			n--;
+		}
+		target = null;
+		basics.CheckPath();
 	}
 
-	public void Hit()
+	public void StatChange()
 	{
+		basics.speed = speed;
+		basics.turns = range;
+		basics.CheckPath();
+	}
 
+	public void Impact(GameObject hit, int defense)
+	{
+		if (hit.tag == "Player")
+		{
+			hit.GetComponent<CharacterStats>().DamageCharacter(power, CharacterStats.DamageTypes.Shot);
+			Destroy(gameObject);
+		}
+		else
+			power -= defense;
+		if (power <= 0)
+			Destroy(gameObject);
 	}
 }

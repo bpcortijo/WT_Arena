@@ -6,37 +6,40 @@ public class UnitBasics : MonoBehaviour {
 	public float PieceMovementTime = 3, tempTime;
 
 	public MapMaker map;
-	public float unitHeight;
+	public float unitHeight = 1f;
 	public bool vector = false;
 	public int tileX, tileY, tileZ, turns;
-	public List<MapMaker.Node> currentPath = null, shortPath;
+	public List<MapMaker.Node> currentPath = null;
+	List<MapMaker.Node> shortPath = null;
 
 	void Start()
 	{
-		if (gameObject.name == "Vector")
-			vector = true;
+
 	}
 
 	public void CheckPath()
 	{
-		shortPath = currentPath;
-		if (gameObject.tag == "Player")
-			while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().actions + 1 + bonus)
-				shortPath.RemoveAt(shortPath.Count - 1);
-
-		if (gameObject.tag == "Attack")
+		if (currentPath != null)
 		{
-			while (shortPath.Count > speed + 1)
-				shortPath.RemoveAt(shortPath.Count - 1);
+			shortPath = new List<MapMaker.Node>(currentPath);
+			if (gameObject.tag == "Player")
+				while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().actions + 1 + bonus)
+					shortPath.RemoveAt(shortPath.Count - 1);
 
-			while (currentPath.Count > speed * turns + 1)
-				currentPath.RemoveAt(currentPath.Count - 1);
+			if (gameObject.tag == "Shot")
+			{
+				while (shortPath.Count > speed + 1)
+					shortPath.RemoveAt(shortPath.Count - 1);
+
+				while (currentPath.Count > speed * turns + 1)
+					currentPath.RemoveAt(currentPath.Count - 1);
+			}
 		}
 	}
 
 	private void Update()
     {
-		if (currentPath != null && tag == "Attack")
+		if (currentPath != null && tag == "Shot")
 		{
 			for (int currentStep = 0; currentStep < currentPath.Count - 1; currentStep++)
 			{
@@ -64,7 +67,7 @@ public class UnitBasics : MonoBehaviour {
 															shortPath[currentStep + 1].z);
 				start.y += unitHeight;
 				end.y += unitHeight;
-				if (tag == "Attack")
+				if (tag == "Shot")
 				{
 					Debug.DrawLine(start, end, Color.red);
 				}
@@ -94,5 +97,21 @@ public class UnitBasics : MonoBehaviour {
 				currentPath = null;
 			}
 		}
+	}
+
+	public bool CheckSlope(int x, int y, int z)
+	{
+		if (tileY - y == 0)
+		{
+			if (tileX - x == 0 || tileZ - z == 0)
+				return true;
+			else if ((tileX - x) / (tileZ - z) == 1 || (tileX - x) / (tileZ - z) == -1)
+				return true;
+		}
+		else if ((tileX - x) / (tileY - y) == 1 || (tileX - x) / (tileY - y) == -1 || (tileX - x) / (tileY - y) == 0)
+				if ((tileZ - z) / (tileY - y) == 1 || (tileZ - z) / (tileY - y) == -1 || (tileZ - z) / (tileY - y) == 0)
+					return true;
+		
+		return false;
 	}
 }

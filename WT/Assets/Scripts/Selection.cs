@@ -12,7 +12,16 @@ public class Selection : MonoBehaviour {
     }
 
     private void OnMouseUp()
-    {
+	{
+		if (map.selectedUnit != null)
+			if (map.selectedUnit.name == "X")
+				if (map.selectedUnit.GetComponent<ShotScript>().target == null)
+				{
+					map.selectedUnit.GetComponent<ShotScript>().target = gameObject.transform.parent.gameObject;
+					UnitBasics target = gameObject.transform.parent.GetComponent<UnitBasics>();
+					map.GeneratePathTo(target.tileX, target.tileY, target.tileZ);
+					return;
+				}
 		map.Select(gameObject.transform.parent.gameObject);
     }
 }

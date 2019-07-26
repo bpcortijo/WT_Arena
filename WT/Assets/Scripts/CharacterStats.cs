@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class CharacterStats : MonoBehaviour
 {
-	public bool attacking;
 	public UnitBasics basics;
 	public List<string> loadout;
 	public GameObject[] shotTypes;
-	public int speed = 2, actions=2;
+	public bool attacking, bleeding = false;
+	public int speed = 2, actions=2, health=100;
+	public enum DamageTypes {Shot, Stabbed, Slashed, Crushed}
 
 	void Start()
     {
@@ -47,7 +48,7 @@ public class CharacterStats : MonoBehaviour
 			basics.Move();
 			actions--;
 			basics.currentPath = null;
-			basics.shortPath = null;
+			basics.CheckPath();
 		}
 	}
 
@@ -59,7 +60,10 @@ public class CharacterStats : MonoBehaviour
 	public void LoadChamber(GameObject ammo, string attackName)
 	{
 		actions--;
-		GameObject shot = Instantiate(ammo, transform.position, Quaternion.identity);
+		Vector3 adjustedPos = new Vector3(transform.position.x, 
+											transform.position.y + basics.unitHeight / 2, 
+											transform.position.z);
+		GameObject shot = Instantiate(ammo, adjustedPos, Quaternion.identity);
 		ShotScript ss = shot.GetComponent<ShotScript>();
 
 		ss.owner = gameObject;
@@ -80,5 +84,17 @@ public class CharacterStats : MonoBehaviour
 	{
 		actions++;
 		basics.CheckPath();
+	}
+
+	public void DamageCharacter(int damage, DamageTypes damageType)
+	{
+		health -= damage * 4;
+		if (health <= 0)
+			Die(damageType);
+	}
+
+	void Die(DamageTypes causeOfDeath)
+	{
+		Destroy(gameObject);
 	}
 }
