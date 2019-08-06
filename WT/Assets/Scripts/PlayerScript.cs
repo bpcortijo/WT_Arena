@@ -1,6 +1,7 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerScript : MonoBehaviour
 {
@@ -10,8 +11,11 @@ public class PlayerScript : MonoBehaviour
 
 	private void Start()
 	{
-		gm = transform.parent.gameObject.GetComponent<ManagementScript>();
-		Spawn();
+		if (SceneManager.GetActiveScene().name=="Game")
+		{
+			gm = transform.parent.gameObject.GetComponent<ManagementScript>();
+			Spawn();
+		}
 	}
 
 
@@ -50,6 +54,10 @@ public class PlayerScript : MonoBehaviour
 			gm.endTurnRequests--;
 		}
 
+		if (characters.Count > 3)
+			if (!CheckFour() || characters.Count > 4)
+				characters.Remove(characters[0]);
+
 	}
 	public void PlayerEndTurn()
 	{
@@ -65,5 +73,19 @@ public class PlayerScript : MonoBehaviour
 	{
 		foreach (GameObject unit in units)
 			unit.GetComponent<CharacterStats>().TakeActions();
+	}
+
+	bool CheckFour()
+	{
+		int can4 = 0;
+		foreach (GameObject character in characters)
+		{
+			if (character.GetComponent<CharacterStats>().fours)
+				can4++;
+		}
+		if (can4 == 4)
+			return true;
+		else
+			return false;
 	}
 }

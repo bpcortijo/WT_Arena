@@ -1,6 +1,7 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ManagementScript : MonoBehaviour {
 	MapMaker mapCode;
@@ -9,12 +10,20 @@ public class ManagementScript : MonoBehaviour {
 
 	public int turn = 1, playersLeft = 1, endTurnRequests = 0;
 
-	void Start()
+	private void OnEnable()
 	{
-		playersLeft = startingPlayers.Count;
-		map = Instantiate(map);
-		mapCode = map.GetComponent<MapMaker>();
-		CreatePlayers();
+		SceneManager.sceneLoaded += OnSceneLoaded;
+	}
+
+	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+	{
+		if (scene.name == "Game")
+		{
+			playersLeft = startingPlayers.Count;
+			map = Instantiate(map);
+			mapCode = map.GetComponent<MapMaker>();
+			CreatePlayers();
+		}
 	}
 
     void Update()

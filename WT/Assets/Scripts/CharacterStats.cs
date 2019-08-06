@@ -4,15 +4,28 @@ using UnityEngine;
 
 public class CharacterStats : MonoBehaviour
 {
+	public int age;
+	public GameObject headShot, bodyShot;
+
+	int speed, health;
+
+	[HideInInspector]
+	public int actions = 2;
+	[HideInInspector]
 	public UnitBasics basics;
+	[HideInInspector]
+	public bool fours = false;
+
 	public List<string> loadout;
 	public GameObject[] shotTypes;
 	public bool attacking, bleeding = false;
-	public int speed = 2, actions=2, health=100;
+	public int agility = 1, energy = 1, experience = 1;
 	public enum DamageTypes {Shot, Stabbed, Slashed, Crushed}
 
 	void Start()
     {
+		speed = agility;
+		health = energy * 15;
 		basics = gameObject.GetComponent<UnitBasics>();
 		basics.speed = speed;
     }

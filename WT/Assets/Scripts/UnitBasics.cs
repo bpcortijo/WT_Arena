@@ -99,7 +99,7 @@ public class UnitBasics : MonoBehaviour {
 		}
 	}
 
-	public bool CheckSlope(int x, int y, int z)
+	public bool CheckSlope(float x, float y, float z)
 	{
 		if (tileY - y == 0)
 		{
@@ -109,9 +109,8 @@ public class UnitBasics : MonoBehaviour {
 				return true;
 		}
 		else if ((tileX - x) / (tileY - y) == 1 || (tileX - x) / (tileY - y) == -1 || (tileX - x) / (tileY - y) == 0)
-				if ((tileZ - z) / (tileY - y) == 1 || (tileZ - z) / (tileY - y) == -1 || (tileZ - z) / (tileY - y) == 0)
-					return true;
-		
+			if ((tileZ - z) / (tileY - y) == 1 || (tileZ - z) / (tileY - y) == -1 || (tileZ - z) / (tileY - y) == 0)
+				return true;
 		return false;
 	}
 }
