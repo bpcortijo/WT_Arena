@@ -14,7 +14,7 @@ public class Selection : MonoBehaviour {
     private void OnMouseUp()
 	{
 		if (map.selectedUnit != null)
-			if (map.selectedUnit.name == "X")
+			if (map.selectedUnit.name == "Hunter")
 				if (map.selectedUnit.GetComponent<ShotScript>().target == null)
 				{
 					map.selectedUnit.GetComponent<ShotScript>().target = gameObject.transform.parent.gameObject;

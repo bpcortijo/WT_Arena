@@ -7,24 +7,35 @@ public class UnitBasics : MonoBehaviour {
 
 	public MapMaker map;
 	public float unitHeight = 1f;
-	public bool vector = false;
+	public bool vector = false, full = false;
 	public int tileX, tileY, tileZ, turns;
+
+	public List<MapMaker.Node> shortPath = null;
 	public List<MapMaker.Node> currentPath = null;
-	List<MapMaker.Node> shortPath = null;
-
-	void Start()
-	{
-
-	}
+	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
 
 	public void CheckPath()
 	{
+		full = false;
 		if (currentPath != null)
 		{
 			shortPath = new List<MapMaker.Node>(currentPath);
 			if (gameObject.tag == "Player")
-				while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().actions + 1 + bonus)
-					shortPath.RemoveAt(shortPath.Count - 1);
+				if (gameObject.GetComponent<CharacterStats>().actions.Contains("Reload"))
+				{
+					//reloading is a free action while moving
+					while (shortPath.Count > speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
+						shortPath.RemoveAt(shortPath.Count - 1);
+					if (shortPath.Count == speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
+						full = true;
+				}
+				else
+				{
+					while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
+						shortPath.RemoveAt(shortPath.Count - 1);
+					if (shortPath.Count == speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
+						full = true;
+				}
 
 			if (gameObject.tag == "Shot")
 			{
@@ -33,6 +44,9 @@ public class UnitBasics : MonoBehaviour {
 
 				while (currentPath.Count > speed * turns + 1)
 					currentPath.RemoveAt(currentPath.Count - 1);
+
+				if (currentPath.Count == speed * turns + 1)
+					full = true;
 			}
 		}
 	}

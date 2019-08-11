@@ -240,7 +240,7 @@ public class MapMaker : MonoBehaviour {
 
 	public void GeneratePathTo(int x, int y, int z) {
 		// Clear out our unit's old path.
-		if (selectedUnit.name == "Z" || selectedUnit.name == "Composite")
+		if (selectedUnit.name == "Strong" || selectedUnit.name == "Composite")
 			if (!selectedUnit.GetComponent<UnitBasics>().CheckSlope(x, y, z))
 				return;
 
@@ -266,8 +266,9 @@ public class MapMaker : MonoBehaviour {
 
         Node target = graph[x, y, z];
 
-		if (selectedUnit.GetComponent<ShotScript>() != null)
-			selectedUnit.GetComponent<ShotScript>().lastKeyPoint = target;
+		if (selectedUnit.GetComponent<UnitBasics>() != null)
+			if (!selectedUnit.GetComponent<UnitBasics>().full)
+				selectedUnit.GetComponent<UnitBasics>().keyPoints.Add(target);
 
 		dist[source] = 0;
 		prev[source] = null;

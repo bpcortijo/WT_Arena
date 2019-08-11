@@ -20,12 +20,14 @@ public class MenuScript : MonoBehaviour
 	public void Next()
 	{
 		currentPage++;
+		currentPage = Mathf.Clamp(currentPage, 0, 2);
 		x = -820 * currentPage;
 	}
 
 	public void Prev()
 	{
 		currentPage--;
+		currentPage = Mathf.Clamp(currentPage, 0, 2);
 		x = -820 * currentPage;
 	}
 
@@ -37,7 +39,6 @@ public class MenuScript : MonoBehaviour
 	private void Update()
 	{
 		Transition();
-		currentPage = Mathf.Clamp(currentPage, 0, 2);
 	}
 
 	void Transition()
