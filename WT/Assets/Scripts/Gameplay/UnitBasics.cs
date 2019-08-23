@@ -49,6 +49,8 @@ public class UnitBasics : MonoBehaviour {
 					full = true;
 			}
 		}
+		else
+			shortPath = null;
 	}
 
 	private void Update()
@@ -81,6 +83,7 @@ public class UnitBasics : MonoBehaviour {
 															shortPath[currentStep + 1].z);
 				start.y += unitHeight;
 				end.y += unitHeight;
+
 				if (tag == "Shot")
 				{
 					Debug.DrawLine(start, end, Color.red);
@@ -93,24 +96,31 @@ public class UnitBasics : MonoBehaviour {
 
 	public void Move()
 	{
-		for (int s = 0; s < speed; s++)
-		{
-			if (currentPath == null)
-				return;
-			currentPath.RemoveAt(0);
-
-			transform.position = map.TileCoordToWorldCoord(currentPath[0].x,
-															currentPath[0].y,
-															currentPath[0].z);
-
-			if (currentPath.Count == 1)
+		//check if character is moving
+		if (shortPath != null)
+			if (shortPath.Count > 1)
 			{
-				tileX = currentPath[0].x;
-				tileY = currentPath[0].y;
-				tileZ = currentPath[0].z;
-				currentPath = null;
+				for (int s = 0; s < speed; s++)
+				{
+					if (shortPath.Count == 1)
+					{
+						tileX = shortPath[0].x;
+						tileY = shortPath[0].y;
+						tileZ = shortPath[0].z;
+
+						transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ);
+						shortPath = null;
+						currentPath = null;
+						return;
+					}
+
+					shortPath.RemoveAt(0);
+
+					transform.position = map.TileCoordToWorldCoord(shortPath[0].x,
+																	shortPath[0].y,
+																	shortPath[0].z);
+				}
 			}
-		}
 	}
 
 	public bool CheckSlope(float x, float y, float z)

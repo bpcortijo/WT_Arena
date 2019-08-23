@@ -21,7 +21,7 @@ public class ShotScript : MonoBehaviour
 	void Update()
     {
 		if (map.selectedUnit != gameObject)
-			if (basics.currentPath == null || basics.currentPath.Count == 1)
+			if (basics.currentPath.Count == 1)
 			{
 				owner.GetComponent<CharacterStats>().CancelAction("shot");
 				Debug.Log("RIP");
@@ -72,21 +72,22 @@ public class ShotScript : MonoBehaviour
 	{
 		int n = basics.currentPath.Count - 1;
 
-		if (basics.keyPoints.Count >= 2)
+		if (basics.keyPoints.Count > 2)
+		{
 			while (basics.currentPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
 			{
 				basics.currentPath.Remove(basics.currentPath[n]);
 				n--;
 			}
+			basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
+		}
 		else
-			while (n >= 0)
-			{
-				basics.currentPath.Remove(basics.currentPath[n]);
-				n--;
-			}
+		{
+			basics.currentPath = null;
+			basics.keyPoints.Clear();
+		}
 
 		basics.CheckPath();
-		basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
 	}
 
 	public void Impact(GameObject hit, int defense)

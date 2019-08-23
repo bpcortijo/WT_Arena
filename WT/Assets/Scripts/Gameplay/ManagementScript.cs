@@ -34,7 +34,31 @@ public class ManagementScript : MonoBehaviour {
 
     void NextTurn()
     {
+		GameObject go = mapCode.selectedUnit;
 		endTurnRequests = 0;
+
+		CharacterStats[] NotMovingCharacters = FindObjectsOfType<CharacterStats>();
+		foreach (CharacterStats characterCode in NotMovingCharacters)
+		{
+			if (characterCode.basics.currentPath == null)
+			{
+				characterCode.basics.currentPath = new List<MapMaker.Node>();
+				characterCode.basics.currentPath.Add(mapCode.graph[characterCode.basics.tileX,
+																	characterCode.basics.tileY,
+																	characterCode.basics.tileZ]);
+			}
+			else if (characterCode.basics.currentPath.Count == 0)
+				characterCode.basics.currentPath.Add(mapCode.graph[characterCode.basics.tileX,
+																	characterCode.basics.tileY,
+																	characterCode.basics.tileZ]);
+		}
+
+		mapCode.selectedUnit = go;
+
+		mapCode.GetCharacterPaths();
+		mapCode.GetAttackPaths();
+		mapCode.CheckCossPaths();
+
 		foreach (GameObject p in players)
 		{
 			PlayerScript player = p.GetComponent<PlayerScript>();
@@ -49,6 +73,7 @@ public class ManagementScript : MonoBehaviour {
 
 		turn++;
 		StartCoroutine(EndTurn());
+		Debug.Log("It's a NEW TURN");
 		foreach (GameObject p in players)
 		{
 			PlayerScript player = p.GetComponent<PlayerScript>();
@@ -64,6 +89,12 @@ public class ManagementScript : MonoBehaviour {
 			p.transform.parent = this.transform;
 			players.Add(p);
 		}
+	}
+
+	public void EndGame()
+	{
+		foreach (Transform child in transform)
+			Destroy(child.gameObject);
 	}
 
 	IEnumerator EndTurn()

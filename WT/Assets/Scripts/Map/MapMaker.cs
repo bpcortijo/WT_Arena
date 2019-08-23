@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class MapMaker : MonoBehaviour {
 
     int[,,] tiles;
-    Node[,,] graph;
+    public Node[,,] graph;
 
     public int mapSizeX = 10;
     public int mapSizeY = 1;
@@ -18,7 +18,9 @@ public class MapMaker : MonoBehaviour {
     public List<GameObject> units;
     public List<GameObject> viableSpawns;
 
-    void Start() {
+	public List<List<Node>> attackPaths = new List<List<Node>>(), characterPaths = new List<List<Node>>();
+
+	void Start() {
         GenerateMapData();
 		GeneratePathfindingGraph();
         GenerateMapVisual();
@@ -245,7 +247,7 @@ public class MapMaker : MonoBehaviour {
 				return;
 
 		Node source = null;
-		List<Node> currentPath = new List<Node>();
+		List<Node> path = new List<Node>();
 
 		UnitBasics unit = selectedUnit.GetComponent<UnitBasics>();
 
@@ -255,6 +257,15 @@ public class MapMaker : MonoBehaviour {
 					unit.tileY,
 					unit.tileZ
 					];
+		else if (unit.currentPath.Count <= 1)
+		{
+			source = graph[
+					unit.tileX,
+					unit.tileY,
+					unit.tileZ
+					];
+			unit.currentPath = new List<Node>();
+		}
 		else
 			source = unit.currentPath[unit.currentPath.Count - 1];
 
@@ -267,8 +278,12 @@ public class MapMaker : MonoBehaviour {
         Node target = graph[x, y, z];
 
 		if (selectedUnit.GetComponent<UnitBasics>() != null)
+		{
+			if (selectedUnit.GetComponent<UnitBasics>().keyPoints.Count == 0)
+				selectedUnit.GetComponent<UnitBasics>().keyPoints.Add(source);
 			if (!selectedUnit.GetComponent<UnitBasics>().full)
 				selectedUnit.GetComponent<UnitBasics>().keyPoints.Add(target);
+		}
 
 		dist[source] = 0;
 		prev[source] = null;
@@ -326,19 +341,19 @@ public class MapMaker : MonoBehaviour {
 
 		// Step through the "prev" chain and add it to our path
 		while(currentStep != null) {
-			currentPath.Add(currentStep);
+			path.Add(currentStep);
 			currentStep = prev[currentStep];
 		}
 
 		// Right now, currentPath describes a route from out target to our source
 		// So we need to invert it!
 
-		currentPath.Reverse();
+		path.Reverse();
 		if (!unit.vector || unit.currentPath == null)
-			unit.currentPath = currentPath;
+			unit.currentPath = path;
 		else
-			for (int n = 1; n < currentPath.Count; n++)
-				unit.currentPath.Add(currentPath[n]);
+			for (int n = 1; n < path.Count; n++)
+				unit.currentPath.Add(path[n]);
 		unit.CheckPath();
 	}
 
@@ -467,6 +482,50 @@ public class MapMaker : MonoBehaviour {
 	public void Select(GameObject go)
 	{
 		selectedUnit = go;
+	}
+
+	public void GetCharacterPaths()
+	{
+		CharacterStats[] charCodes = FindObjectsOfType<CharacterStats>();
+		foreach (CharacterStats character in charCodes)
+			characterPaths.Add(character.basics.currentPath);
+	}
+
+	public void GetAttackPaths()
+	{
+		ShotScript[] shotCodes = FindObjectsOfType<ShotScript>();
+		foreach (ShotScript shot in shotCodes)
+			attackPaths.Add(shot.basics.shortPath);
+	}
+
+	public void CheckCossPaths()
+	{
+		for (int ch = 0; ch < characterPaths.Count - 1; ch++)
+		{
+			foreach (Node point in characterPaths[ch])
+			{
+				for (int op = ch + 1; op < characterPaths.Count; op++)
+				{
+					if (characterPaths[op].Contains(point))
+						Debug.Log("Characters crossed");
+				}
+			}
+		}
+
+		for (int ch = 0; ch < characterPaths.Count; ch++)
+		{
+			foreach (Node point in characterPaths[ch])
+			{
+				for (int atk = 0; atk < attackPaths.Count; atk++)
+				{
+					if (attackPaths[atk].Contains(point))
+						Debug.Log("Character Hit");
+				}
+			}
+		}
+
+		attackPaths.Clear();
+		characterPaths.Clear();
 	}
 
     public class Node

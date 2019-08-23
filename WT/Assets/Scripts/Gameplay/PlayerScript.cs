@@ -61,7 +61,8 @@ public class PlayerScript : MonoBehaviour
 	}
 	public void PlayerEndTurn()
 	{
-		gm.endTurnRequests++;
+		if (gm != null)
+			gm.endTurnRequests++;
 	}
 
 	public void Replace()
@@ -71,6 +72,8 @@ public class PlayerScript : MonoBehaviour
 
 	public void TakeTurn()
 	{
+		if (gm != null)
+			canEnd = true;
 		foreach (GameObject unit in units)
 			unit.GetComponent<CharacterStats>().TakeActions();
 	}

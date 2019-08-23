@@ -108,14 +108,15 @@ public class CharacterStats : MonoBehaviour
 	public void TakeActions()
 	{
 		while (movementActions>0)
-		{ 
+		{
 			basics.Move();
 			movementActions--;
-			basics.currentPath = null;
-			basics.CheckPath();
 		}
+
+		basics.CheckPath();
+
 		basics.keyPoints.Clear();
-		shot = Mathf.RoundToInt(Random.Range(-100f, 100f) / Time.deltaTime);
+		movementActions = 2;
 	}
 
 	void Undo()
@@ -310,21 +311,22 @@ public class CharacterStats : MonoBehaviour
 	{
 		int n = basics.currentPath.Count - 1;
 
-		if (basics.keyPoints.Count >= 2)
+		if (basics.keyPoints.Count > 2)
+		{
 			while (basics.currentPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
 			{
 				basics.currentPath.Remove(basics.currentPath[n]);
 				n--;
 			}
+			basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
+		}
 		else
-			while (n >= 0)
-			{
-				basics.currentPath.Remove(basics.currentPath[n]);
-				n--;
-			}
+		{
+			basics.currentPath = null;
+			basics.keyPoints.Clear();
+		}
 
 		basics.CheckPath();
-		basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
 	}
 
 	public void DamageCharacter(int damage, DamageTypes damageType)
