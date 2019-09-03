@@ -101,7 +101,8 @@ public class CharacterStats : MonoBehaviour
 			}
 
 			if (Input.GetMouseButtonUp(1))
-				CancelAction(actions[actions.Count-1]);
+				if (actions.Count > 0)
+					CancelAction(actions[actions.Count - 1]);
 		}
 	}
 
@@ -115,6 +116,7 @@ public class CharacterStats : MonoBehaviour
 
 		basics.CheckPath();
 
+		basics.currentPath = null;
 		basics.keyPoints.Clear();
 		movementActions = 2;
 	}
@@ -329,9 +331,9 @@ public class CharacterStats : MonoBehaviour
 		basics.CheckPath();
 	}
 
-	public void DamageCharacter(int damage, DamageTypes damageType)
+	public void DamageCharacter(float damage, DamageTypes damageType, bool crit)
 	{
-		health -= damage * 4;
+		health -= Mathf.RoundToInt(damage * 4);
 		if (health <= 0)
 			Die(damageType);
 	}

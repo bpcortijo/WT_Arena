@@ -16,6 +16,7 @@ public class UnitBasics : MonoBehaviour {
 
 	public void CheckPath()
 	{
+		// Create short path (the path the character or bullet plans to take this turn) and Remove any points past max distance
 		full = false;
 		if (currentPath != null)
 		{
@@ -23,7 +24,7 @@ public class UnitBasics : MonoBehaviour {
 			if (gameObject.tag == "Player")
 				if (gameObject.GetComponent<CharacterStats>().actions.Contains("Reload"))
 				{
-					//reloading is a free action while moving
+					// Reloading is a free action while moving
 					while (shortPath.Count > speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
 						shortPath.RemoveAt(shortPath.Count - 1);
 					if (shortPath.Count == speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
@@ -57,6 +58,7 @@ public class UnitBasics : MonoBehaviour {
     {
 		if (currentPath != null && tag == "Shot")
 		{
+			// Drawing the lines to show the path the bullet will take after this turn (PLACEHOLDER)
 			for (int currentStep = 0; currentStep < currentPath.Count - 1; currentStep++)
 			{
 				Vector3 start = map.TileCoordToWorldCoord(currentPath[currentStep].x,
@@ -73,6 +75,7 @@ public class UnitBasics : MonoBehaviour {
 
 		if (shortPath != null)
 		{
+			// Drawing the lines to show the path the character or bullet will take this turn (PLACEHOLDER)
 			for (int currentStep = 0; currentStep < shortPath.Count - 1; currentStep++)
 			{
 				Vector3 start = map.TileCoordToWorldCoord(shortPath[currentStep].x,
@@ -96,34 +99,34 @@ public class UnitBasics : MonoBehaviour {
 
 	public void Move()
 	{
-		//check if character is moving
-		if (shortPath != null)
+		int s = 1;  // Spaces
+
+		if (shortPath != null)	// Check if character is movin
 			if (shortPath.Count > 1)
 			{
-				for (int s = 0; s < speed; s++)
+				while (s < speed && s<shortPath.Count)
 				{
-					if (shortPath.Count == 1)
-					{
-						tileX = shortPath[0].x;
-						tileY = shortPath[0].y;
-						tileZ = shortPath[0].z;
-
-						transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ);
-						shortPath = null;
-						currentPath = null;
-						return;
-					}
-
-					shortPath.RemoveAt(0);
-
-					transform.position = map.TileCoordToWorldCoord(shortPath[0].x,
-																	shortPath[0].y,
-																	shortPath[0].z);
+					transform.position = map.TileCoordToWorldCoord(shortPath[s].x,
+																	shortPath[s].y,
+																	shortPath[s].z);
+					s++;
 				}
+				if (s == shortPath.Count)
+				{
+					tileX = shortPath[s - 1].x;
+					tileY = shortPath[s - 1].y;
+					tileZ = shortPath[s - 1].z;
+				}
+				else // If they didn't finish moving remove the spaces they already went
+					while (s >= 0)
+					{
+						shortPath.RemoveAt(0);
+						s--;
+					}
 			}
 	}
 
-	public bool CheckSlope(float x, float y, float z)
+	public bool CheckSlope(float x, float y, float z) // Check if the shot is going straight in any direction
 	{
 		if (tileY - y == 0)
 		{

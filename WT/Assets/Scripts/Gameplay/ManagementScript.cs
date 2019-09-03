@@ -58,6 +58,7 @@ public class ManagementScript : MonoBehaviour {
 		mapCode.GetCharacterPaths();
 		mapCode.GetAttackPaths();
 		mapCode.CheckCossPaths();
+		EditPaths(mapCode.characterPaths);
 
 		foreach (GameObject p in players)
 		{
@@ -79,6 +80,21 @@ public class ManagementScript : MonoBehaviour {
 			PlayerScript player = p.GetComponent<PlayerScript>();
 			player.canEnd = true;
 		}
+	}
+
+	void EditPaths(Dictionary<List<MapMaker.Node>, int> characterPaths)
+	{
+		foreach (List<MapMaker.Node> path in characterPaths.Keys)
+			foreach (GameObject player in players)
+				foreach (GameObject unit in player.GetComponent<PlayerScript>().units)
+				{
+					UnitBasics unitCode = unit.GetComponent<UnitBasics>();
+					if (path[0] == mapCode.graph[unitCode.tileX, unitCode.tileY, unitCode.tileZ])
+					{
+						unitCode.currentPath = path;
+						break;
+					}
+				}
 	}
 
 	void CreatePlayers()

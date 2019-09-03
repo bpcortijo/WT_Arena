@@ -18,7 +18,8 @@ public class MapMaker : MonoBehaviour {
     public List<GameObject> units;
     public List<GameObject> viableSpawns;
 
-	public List<List<Node>> attackPaths = new List<List<Node>>(), characterPaths = new List<List<Node>>();
+	public Dictionary<List<Node>, int> attackPaths= new Dictionary<List<Node>, int>(), 
+										characterPaths = new Dictionary<List<Node>, int>();
 
 	void Start() {
         GenerateMapData();
@@ -488,44 +489,78 @@ public class MapMaker : MonoBehaviour {
 	{
 		CharacterStats[] charCodes = FindObjectsOfType<CharacterStats>();
 		foreach (CharacterStats character in charCodes)
-			characterPaths.Add(character.basics.currentPath);
+			characterPaths.Add(character.basics.currentPath, character.basics.speed);
 	}
 
 	public void GetAttackPaths()
 	{
 		ShotScript[] shotCodes = FindObjectsOfType<ShotScript>();
 		foreach (ShotScript shot in shotCodes)
-			attackPaths.Add(shot.basics.shortPath);
+			attackPaths.Add(shot.basics.shortPath,shot.basics.speed);
 	}
 
 	public void CheckCossPaths()
 	{
-		for (int ch = 0; ch < characterPaths.Count - 1; ch++)
-		{
-			foreach (Node point in characterPaths[ch])
-			{
-				for (int op = ch + 1; op < characterPaths.Count; op++)
-				{
-					if (characterPaths[op].Contains(point))
-						Debug.Log("Characters crossed");
-				}
-			}
-		}
+		// Check if players get in eachother's way
 
-		for (int ch = 0; ch < characterPaths.Count; ch++)
-		{
-			foreach (Node point in characterPaths[ch])
-			{
-				for (int atk = 0; atk < attackPaths.Count; atk++)
-				{
-					if (attackPaths[atk].Contains(point))
-						Debug.Log("Character Hit");
-				}
-			}
-		}
+		foreach (KeyValuePair<List<Node>, int> myPathStats in characterPaths)
+			foreach (KeyValuePair<List<Node>, int> theirPathStats in characterPaths)
+				foreach (Node point in myPathStats.Key)
+					if (theirPathStats.Key.Contains(point) && myPathStats.Key != theirPathStats.Key)
+					{
+						if (myPathStats.Key.IndexOf(point) / myPathStats.Value == theirPathStats.Key.IndexOf(point) / theirPathStats.Value)
+						{
+							RemovePastIntersect(myPathStats.Key, point);
+							RemovePastIntersect(theirPathStats.Key, point);
+						}
+						else if (myPathStats.Key.IndexOf(point) / myPathStats.Value > theirPathStats.Key.IndexOf(point) / theirPathStats.Value
+									&& myPathStats.Key.IndexOf(point) - 1 / myPathStats.Value < theirPathStats.Key.IndexOf(point) / theirPathStats.Value)
+							RemovePastIntersect(myPathStats.Key, point);
+						break;
+					}
 
+		foreach (KeyValuePair<List<Node>, int> atkPath in attackPaths)
+			foreach (KeyValuePair<List<Node>, int> characterPathStats in characterPaths)
+				foreach (Node point in atkPath.Key)
+				{
+					if (characterPathStats.Key.Contains(point))
+					{/*
+						ShotScript shot;
+						CharacterStats victim;
+						if (characterPathStats.Key.Count - 1 > 0)
+						{
+							float percent = characterPathStats.Key.IndexOf(point) / characterPathStats.Key.Count - 1;
+							//shot.Impact(victim, percent, true);
+						}
+						else
+							//shot.Impact(victim, 1.0f, false);
+							*/
+						break;
+					}
+				}
+		
 		attackPaths.Clear();
 		characterPaths.Clear();
+	}
+
+	void RemovePastIntersect(List<Node> nodes, Node point)
+	{
+		int p = nodes.IndexOf(point);
+		while (nodes.Count > p)
+			nodes.RemoveAt(p);
+	}
+
+	public TileScript GetTileFromNode(Node space)
+	{
+		TileScript[] tiles = FindObjectsOfType<TileScript>();
+		foreach (TileScript ts in tiles)
+		{
+			if (ts.tileX == space.x)
+				if (ts.tileY == space.y)
+					if (ts.tileZ == space.z)
+						return ts;
+		}
+		return null;
 	}
 
     public class Node

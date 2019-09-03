@@ -70,6 +70,7 @@ public class ShotScript : MonoBehaviour
 
 	public void ShotClear()
 	{
+		// Destroy path
 		int n = basics.currentPath.Count - 1;
 
 		if (basics.keyPoints.Count > 2)
@@ -90,17 +91,25 @@ public class ShotScript : MonoBehaviour
 		basics.CheckPath();
 	}
 
-	public void Impact(GameObject hit, int defense)
+	void CheckHit(MapMaker.Node currentSpace, int index)
 	{
-		if (hit.tag == "Player")
-		{
-			hit.GetComponent<CharacterStats>().DamageCharacter(power, CharacterStats.DamageTypes.Shot);
-			Destroy(gameObject);
-		} else { 
-			if (name == "Hunter" || name == "Composite" || power <= 0)
-				Destroy(gameObject);
-			else
-			power -= defense;
-		}
+		// If the shot his a wall lose 1 power
+		TileScript currentTile = map.GetTileFromNode(currentSpace);
+		if (currentSpace.x < basics.currentPath[index + 1].x && !currentTile.eastViable||
+			currentSpace.x > basics.currentPath[index + 1].x && !currentTile.westViable ||
+			currentSpace.y < basics.currentPath[index + 1].y && !currentTile.ceiling ||
+			currentSpace.y > basics.currentPath[index + 1].y && !currentTile.floor ||
+			currentSpace.z < basics.currentPath[index + 1].z && !currentTile.northViable ||
+			currentSpace.z > basics.currentPath[index + 1].z && !currentTile.southViable)
+			power--;
+	}
+
+	public void Impact(CharacterStats character, float percent, bool canBeCrit) // Deal damage
+	{
+		if (percent == 1 && canBeCrit)
+			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, true);
+		else
+			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, false);
+		Destroy(gameObject);
 	}
 }
