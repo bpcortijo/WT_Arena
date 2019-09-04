@@ -18,8 +18,8 @@ public class MapMaker : MonoBehaviour {
     public List<GameObject> units;
     public List<GameObject> viableSpawns;
 
-	public Dictionary<List<Node>, int> attackPaths= new Dictionary<List<Node>, int>(), 
-										characterPaths = new Dictionary<List<Node>, int>();
+	public List<ShotScript> attackPaths;
+	public List<CharacterStats> characterPaths;
 
 	void Start() {
         GenerateMapData();
@@ -252,23 +252,23 @@ public class MapMaker : MonoBehaviour {
 
 		UnitBasics unit = selectedUnit.GetComponent<UnitBasics>();
 
-		if (!unit.vector || unit.currentPath == null)
+		if (!unit.vector || unit.plannedPath == null)
 			source = graph[
 					unit.tileX,
 					unit.tileY,
 					unit.tileZ
 					];
-		else if (unit.currentPath.Count <= 1)
+		else if (unit.plannedPath.Count <= 1)
 		{
 			source = graph[
 					unit.tileX,
 					unit.tileY,
 					unit.tileZ
 					];
-			unit.currentPath = new List<Node>();
+			unit.plannedPath = new List<Node>();
 		}
 		else
-			source = unit.currentPath[unit.currentPath.Count - 1];
+			source = unit.plannedPath[unit.plannedPath.Count - 1];
 
 		Dictionary<Node, float> dist = new Dictionary<Node, float>();
 		Dictionary<Node, Node> prev = new Dictionary<Node, Node>();
@@ -350,11 +350,11 @@ public class MapMaker : MonoBehaviour {
 		// So we need to invert it!
 
 		path.Reverse();
-		if (!unit.vector || unit.currentPath == null)
-			unit.currentPath = path;
+		if (!unit.vector || unit.plannedPath == null)
+			unit.plannedPath = path;
 		else
 			for (int n = 1; n < path.Count; n++)
-				unit.currentPath.Add(path[n]);
+				unit.plannedPath.Add(path[n]);
 		unit.CheckPath();
 	}
 
@@ -485,69 +485,78 @@ public class MapMaker : MonoBehaviour {
 		selectedUnit = go;
 	}
 
-	public void GetCharacterPaths()
-	{
-		CharacterStats[] charCodes = FindObjectsOfType<CharacterStats>();
-		foreach (CharacterStats character in charCodes)
-			characterPaths.Add(character.basics.currentPath, character.basics.speed);
-	}
-
 	public void GetAttackPaths()
 	{
 		ShotScript[] shotCodes = FindObjectsOfType<ShotScript>();
 		foreach (ShotScript shot in shotCodes)
-			attackPaths.Add(shot.basics.shortPath,shot.basics.speed);
+			attackPaths.Add(shot);
 	}
 
-	public void CheckCossPaths()
+	public void CheckAllPaths()
 	{
 		// Check if players get in eachother's way
 
-		foreach (KeyValuePair<List<Node>, int> myPathStats in characterPaths)
-			foreach (KeyValuePair<List<Node>, int> theirPathStats in characterPaths)
-				foreach (Node point in myPathStats.Key)
-					if (theirPathStats.Key.Contains(point) && myPathStats.Key != theirPathStats.Key)
-					{
-						if (myPathStats.Key.IndexOf(point) / myPathStats.Value == theirPathStats.Key.IndexOf(point) / theirPathStats.Value)
-						{
-							RemovePastIntersect(myPathStats.Key, point);
-							RemovePastIntersect(theirPathStats.Key, point);
-						}
-						else if (myPathStats.Key.IndexOf(point) / myPathStats.Value > theirPathStats.Key.IndexOf(point) / theirPathStats.Value
-									&& myPathStats.Key.IndexOf(point) - 1 / myPathStats.Value < theirPathStats.Key.IndexOf(point) / theirPathStats.Value)
-							RemovePastIntersect(myPathStats.Key, point);
-						break;
-					}
+		foreach (CharacterStats character in characterPaths)
+			CheckIfCrossed(character);
 
-		foreach (KeyValuePair<List<Node>, int> atkPath in attackPaths)
-			foreach (KeyValuePair<List<Node>, int> characterPathStats in characterPaths)
-				foreach (Node point in atkPath.Key)
+		float currentTiming=99f;
+		CharacterStats currentHit=null;
+
+		foreach (ShotScript atk in attackPaths)
+		{
+			foreach (Node point in atk.basics.shortPath)
+				foreach (CharacterStats character in characterPaths)
 				{
-					if (characterPathStats.Key.Contains(point))
-					{/*
-						ShotScript shot;
-						CharacterStats victim;
-						if (characterPathStats.Key.Count - 1 > 0)
+					if (character.basics.shortPath.Contains(point))
+					{
+						float timing = character.basics.shortPath.IndexOf(point) / character.basics.speed;
+						if (timing < currentTiming)
 						{
-							float percent = characterPathStats.Key.IndexOf(point) / characterPathStats.Key.Count - 1;
-							//shot.Impact(victim, percent, true);
+							currentHit = character;
+							currentTiming = timing;
 						}
-						else
-							//shot.Impact(victim, 1.0f, false);
-							*/
-						break;
 					}
+					break;
 				}
-		
+			if (currentTiming == 0)
+				atk.Impact(currentHit, currentTiming, false);
+			else if (currentHit.movementActions > 1)
+				atk.Impact(currentHit, currentTiming / 2, true);
+			else
+				atk.Impact(currentHit, currentTiming, true);
+		}
+
 		attackPaths.Clear();
 		characterPaths.Clear();
 	}
 
-	void RemovePastIntersect(List<Node> nodes, Node point)
+	void CheckIfCrossed(CharacterStats character)
 	{
+		foreach (Node step in character.basics.plannedPath)
+			foreach (CharacterStats other in characterPaths)
+				if (other.basics.plannedPath.Contains(step) && other != character)
+				{
+					if (character.basics.plannedPath.IndexOf(step) / character.basics.speed == other.basics.plannedPath.IndexOf(step) / other.basics.speed)
+					{
+						RemovePastIntersect(character, step);
+						RemovePastIntersect(other, step);
+					}
+					else if (character.basics.plannedPath.IndexOf(step) / character.basics.speed > other.basics.plannedPath.IndexOf(step) / other.basics.speed
+								&& character.basics.plannedPath.IndexOf(step) - 1 / character.basics.speed < other.basics.plannedPath.IndexOf(step) / other.basics.speed)
+						RemovePastIntersect(character, step);
+					else if (other.basics.plannedPath.IndexOf(step)==other.basics.plannedPath.Count-1)
+						RemovePastIntersect(character, step);
+					return;
+				}
+	}
+
+	void RemovePastIntersect(CharacterStats character, Node point)
+	{
+		List<Node> nodes = character.basics.plannedPath;
 		int p = nodes.IndexOf(point);
 		while (nodes.Count > p)
 			nodes.RemoveAt(p);
+		character.basics.CheckPath();
 	}
 
 	public TileScript GetTileFromNode(Node space)

@@ -116,7 +116,7 @@ public class CharacterStats : MonoBehaviour
 
 		basics.CheckPath();
 
-		basics.currentPath = null;
+		basics.plannedPath = null;
 		basics.keyPoints.Clear();
 		movementActions = 2;
 	}
@@ -311,20 +311,20 @@ public class CharacterStats : MonoBehaviour
 
 	public void MoveClear()
 	{
-		int n = basics.currentPath.Count - 1;
+		int n = basics.plannedPath.Count - 1;
 
 		if (basics.keyPoints.Count > 2)
 		{
-			while (basics.currentPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
+			while (basics.plannedPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
 			{
-				basics.currentPath.Remove(basics.currentPath[n]);
+				basics.plannedPath.Remove(basics.plannedPath[n]);
 				n--;
 			}
 			basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
 		}
 		else
 		{
-			basics.currentPath = null;
+			basics.plannedPath = null;
 			basics.keyPoints.Clear();
 		}
 

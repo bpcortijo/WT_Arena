@@ -11,16 +11,16 @@ public class UnitBasics : MonoBehaviour {
 	public int tileX, tileY, tileZ, turns;
 
 	public List<MapMaker.Node> shortPath = null;
-	public List<MapMaker.Node> currentPath = null;
+	public List<MapMaker.Node> plannedPath = null;
 	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
 
 	public void CheckPath()
 	{
 		// Create short path (the path the character or bullet plans to take this turn) and Remove any points past max distance
 		full = false;
-		if (currentPath != null)
+		if (plannedPath != null)
 		{
-			shortPath = new List<MapMaker.Node>(currentPath);
+			shortPath = new List<MapMaker.Node>(plannedPath);
 			if (gameObject.tag == "Player")
 				if (gameObject.GetComponent<CharacterStats>().actions.Contains("Reload"))
 				{
@@ -43,10 +43,10 @@ public class UnitBasics : MonoBehaviour {
 				while (shortPath.Count > speed + 1)
 					shortPath.RemoveAt(shortPath.Count - 1);
 
-				while (currentPath.Count > speed * turns + 1)
-					currentPath.RemoveAt(currentPath.Count - 1);
+				while (plannedPath.Count > speed * turns + 1)
+					plannedPath.RemoveAt(plannedPath.Count - 1);
 
-				if (currentPath.Count == speed * turns + 1)
+				if (plannedPath.Count == speed * turns + 1)
 					full = true;
 			}
 		}
@@ -56,17 +56,17 @@ public class UnitBasics : MonoBehaviour {
 
 	private void Update()
     {
-		if (currentPath != null && tag == "Shot")
+		if (plannedPath != null && tag == "Shot")
 		{
 			// Drawing the lines to show the path the bullet will take after this turn (PLACEHOLDER)
-			for (int currentStep = 0; currentStep < currentPath.Count - 1; currentStep++)
+			for (int currentStep = 0; currentStep < plannedPath.Count - 1; currentStep++)
 			{
-				Vector3 start = map.TileCoordToWorldCoord(currentPath[currentStep].x,
-																currentPath[currentStep].y,
-																currentPath[currentStep].z);
-				Vector3 end = map.TileCoordToWorldCoord(currentPath[currentStep + 1].x,
-																currentPath[currentStep + 1].y,
-																currentPath[currentStep + 1].z);
+				Vector3 start = map.TileCoordToWorldCoord(plannedPath[currentStep].x,
+																plannedPath[currentStep].y,
+																plannedPath[currentStep].z);
+				Vector3 end = map.TileCoordToWorldCoord(plannedPath[currentStep + 1].x,
+																plannedPath[currentStep + 1].y,
+																plannedPath[currentStep + 1].z);
 				start.y += unitHeight;
 				end.y += unitHeight;
 				Debug.DrawLine(start, end, Color.black);

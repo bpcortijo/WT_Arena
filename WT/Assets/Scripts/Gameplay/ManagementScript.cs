@@ -40,25 +40,25 @@ public class ManagementScript : MonoBehaviour {
 		CharacterStats[] NotMovingCharacters = FindObjectsOfType<CharacterStats>();
 		foreach (CharacterStats characterCode in NotMovingCharacters)
 		{
-			if (characterCode.basics.currentPath == null)
+			if (characterCode.basics.plannedPath == null)
 			{
-				characterCode.basics.currentPath = new List<MapMaker.Node>();
-				characterCode.basics.currentPath.Add(mapCode.graph[characterCode.basics.tileX,
+				characterCode.basics.plannedPath = new List<MapMaker.Node>();
+				characterCode.basics.plannedPath.Add(mapCode.graph[characterCode.basics.tileX,
 																	characterCode.basics.tileY,
 																	characterCode.basics.tileZ]);
 			}
-			else if (characterCode.basics.currentPath.Count == 0)
-				characterCode.basics.currentPath.Add(mapCode.graph[characterCode.basics.tileX,
+			else if (characterCode.basics.plannedPath.Count == 0)
+				characterCode.basics.plannedPath.Add(mapCode.graph[characterCode.basics.tileX,
 																	characterCode.basics.tileY,
 																	characterCode.basics.tileZ]);
 		}
 
 		mapCode.selectedUnit = go;
 
-		mapCode.GetCharacterPaths();
+		GetCharacterPaths();
 		mapCode.GetAttackPaths();
-		mapCode.CheckCossPaths();
-		EditPaths(mapCode.characterPaths);
+		mapCode.CheckAllPaths();
+//		EditPaths(mapCode.characterPaths);
 
 		foreach (GameObject p in players)
 		{
@@ -82,21 +82,6 @@ public class ManagementScript : MonoBehaviour {
 		}
 	}
 
-	void EditPaths(Dictionary<List<MapMaker.Node>, int> characterPaths)
-	{
-		foreach (List<MapMaker.Node> path in characterPaths.Keys)
-			foreach (GameObject player in players)
-				foreach (GameObject unit in player.GetComponent<PlayerScript>().units)
-				{
-					UnitBasics unitCode = unit.GetComponent<UnitBasics>();
-					if (path[0] == mapCode.graph[unitCode.tileX, unitCode.tileY, unitCode.tileZ])
-					{
-						unitCode.currentPath = path;
-						break;
-					}
-				}
-	}
-
 	void CreatePlayers()
 	{
 		foreach (GameObject player in startingPlayers)
@@ -105,6 +90,13 @@ public class ManagementScript : MonoBehaviour {
 			p.transform.parent = this.transform;
 			players.Add(p);
 		}
+	}
+
+	void GetCharacterPaths()
+	{
+		foreach (GameObject player in players)
+			foreach (GameObject unit in player.GetComponent<PlayerScript>().units)
+				mapCode.characterPaths.Add(unit.GetComponent<CharacterStats>());
 	}
 
 	public void EndGame()

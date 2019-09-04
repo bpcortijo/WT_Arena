@@ -21,7 +21,7 @@ public class ShotScript : MonoBehaviour
 	void Update()
     {
 		if (map.selectedUnit != gameObject)
-			if (basics.currentPath.Count == 1)
+			if (basics.plannedPath.Count == 1)
 			{
 				owner.GetComponent<CharacterStats>().CancelAction("shot");
 				Debug.Log("RIP");
@@ -71,20 +71,20 @@ public class ShotScript : MonoBehaviour
 	public void ShotClear()
 	{
 		// Destroy path
-		int n = basics.currentPath.Count - 1;
+		int n = basics.plannedPath.Count - 1;
 
 		if (basics.keyPoints.Count > 2)
 		{
-			while (basics.currentPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
+			while (basics.plannedPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
 			{
-				basics.currentPath.Remove(basics.currentPath[n]);
+				basics.plannedPath.Remove(basics.plannedPath[n]);
 				n--;
 			}
 			basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
 		}
 		else
 		{
-			basics.currentPath = null;
+			basics.plannedPath = null;
 			basics.keyPoints.Clear();
 		}
 
@@ -95,12 +95,12 @@ public class ShotScript : MonoBehaviour
 	{
 		// If the shot his a wall lose 1 power
 		TileScript currentTile = map.GetTileFromNode(currentSpace);
-		if (currentSpace.x < basics.currentPath[index + 1].x && !currentTile.eastViable||
-			currentSpace.x > basics.currentPath[index + 1].x && !currentTile.westViable ||
-			currentSpace.y < basics.currentPath[index + 1].y && !currentTile.ceiling ||
-			currentSpace.y > basics.currentPath[index + 1].y && !currentTile.floor ||
-			currentSpace.z < basics.currentPath[index + 1].z && !currentTile.northViable ||
-			currentSpace.z > basics.currentPath[index + 1].z && !currentTile.southViable)
+		if (currentSpace.x < basics.plannedPath[index + 1].x && !currentTile.eastViable||
+			currentSpace.x > basics.plannedPath[index + 1].x && !currentTile.westViable ||
+			currentSpace.y < basics.plannedPath[index + 1].y && !currentTile.ceiling ||
+			currentSpace.y > basics.plannedPath[index + 1].y && !currentTile.floor ||
+			currentSpace.z < basics.plannedPath[index + 1].z && !currentTile.northViable ||
+			currentSpace.z > basics.plannedPath[index + 1].z && !currentTile.southViable)
 			power--;
 	}
 
@@ -110,6 +110,5 @@ public class ShotScript : MonoBehaviour
 			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, true);
 		else
 			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, false);
-		Destroy(gameObject);
 	}
 }
