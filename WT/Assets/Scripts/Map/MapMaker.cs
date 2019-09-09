@@ -7,10 +7,10 @@ public class MapMaker : MonoBehaviour {
 
     int[,,] tiles;
     public Node[,,] graph;
+	int focusedHeight = 0;
+	public string mapName;
 
-    public int mapSizeX = 10;
-    public int mapSizeY = 1;
-    public int mapSizeZ = 10;
+    int mapSizeX = 10, mapSizeY = 1, mapSizeZ = 10;
 
 	public TileType[] tileTypes;
 
@@ -22,33 +22,47 @@ public class MapMaker : MonoBehaviour {
 	public List<CharacterStats> characterPaths;
 
 	void Start() {
-        GenerateMapData();
+        CreateMap();
 		GeneratePathfindingGraph();
         GenerateMapVisual();
         AdjustPathfindingGraph();
 	}
 
-	void GenerateMapData() {
-        // Allocate our map tiles
-        tiles = new int[mapSizeX, mapSizeY, mapSizeZ];
-		
-		int x,y,z;
+	void CreateMap() {
+		switch (mapName)
+		{
 
-        // Initialize our map tiles to be Temp
-        for (x = 0; x < mapSizeX; x++)
-            for (y = 0; y < mapSizeY; y++)
-                for (z = 0; z < mapSizeZ; z++)
-                    tiles[x, y, z] = 1;
+			default:
+				mapSizeX = 10;
+				mapSizeY = 2;
+				mapSizeZ = 10;
 
-        //CustomizeMap()
+				GenerateMapData();
 
-        tiles[3, 0, 5] = 4;
-        tiles[4, 0, 5] = 2;
-        tiles[5, 0, 5] = 2;
-        tiles[3, 0, 4] = 3;
-        tiles[3, 0, 3] = 3;
-        tiles[3, 0, 1] = 3;
+				tiles[3, 0, 5] = 5;
+				tiles[5, 1, 5] = 0;
+				tiles[4, 0, 5] = 2;
+				tiles[5, 0, 5] = 2;
+				tiles[3, 0, 4] = 3;
+				tiles[3, 0, 3] = 3;
+				tiles[3, 0, 1] = 3;
+				break;
+		}
     }
+
+	void GenerateMapData()
+	{
+		// Allocate our map tiles
+		tiles = new int[mapSizeX, mapSizeY, mapSizeZ];
+
+		int x, y, z;
+
+		// Initialize our map tiles to be Temp
+		for (x = 0; x < mapSizeX; x++)
+			for (y = 0; y < mapSizeY; y++)
+				for (z = 0; z < mapSizeZ; z++)
+					tiles[x, y, z] = 1;
+	}
 
 	void GeneratePathfindingGraph() {
         // Initialize the array
@@ -145,24 +159,24 @@ public class MapMaker : MonoBehaviour {
 	}
 
 	void GenerateMapVisual() {
-        for (int x = 0; x < mapSizeX; x++)
-            for (int y = 0; y < mapSizeY; y++)
-                for (int z = 0; z < mapSizeZ; z++)
-                {
-                    if (tiles[x, y, z] != 0) {
-                        TileType tt = tileTypes[tiles[x, y, z]];
-                        GameObject go = Instantiate(tt.tileVisualPrefab, new Vector3(x, y, z), Quaternion.identity);
-                        go.transform.parent = gameObject.transform;
-                        go.name = "(" + x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ") ";
-                        TileScript ts = go.GetComponent<TileScript>();
-                        ts.tileX = x;
-                        ts.tileY = y;
-                        ts.tileZ = z;
-                        ts.map = this;
-                        if (ts.floor)
-                            viableSpawns.Add(go);
-                    }
-                }
+		for (int x = 0; x < mapSizeX; x++)
+			for (int y = 0; y < mapSizeY; y++)
+				for (int z = 0; z < mapSizeZ; z++)
+				{
+					TileType tt = tileTypes[tiles[x, y, z]];
+					GameObject go = Instantiate(tt.tileVisualPrefab, new Vector3(x, y, z), Quaternion.identity);
+					go.transform.parent = gameObject.transform;
+					go.transform.localRotation = Quaternion.identity;
+					go.name = "(" + x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ") ";
+					TileScript ts = go.GetComponent<TileScript>();
+					ts.tt = tt;
+					ts.tileX = x;
+					ts.tileY = y;
+					ts.tileZ = z;
+					ts.map = this;
+					if (ts.floor)
+						viableSpawns.Add(go);
+				}
 	}
 
     void AdjustPathfindingGraph()
@@ -178,62 +192,62 @@ public class MapMaker : MonoBehaviour {
                 }
     }
 
-	void AdjustNeighbors(TileScript ct, int x, int y, int z)
+	void AdjustNeighbors(TileScript currentTile, int x, int y, int z)
     {
-        TileScript n;
+        TileScript neighbor;
 
         if (x > 0)
-            if (!ct.westViable)
+            if (!currentTile.westViable)
             {
-                n = transform.Find("(" + (x - 1).ToString() + ", "
+                neighbor = transform.Find("(" + (x - 1).ToString() + ", "
                                     + y.ToString() + ", "
                                     + z.ToString() + ") ").gameObject.GetComponent<TileScript>();
-                n.eastViable = false;
+                neighbor.eastViable = false;
             }
 
         if (x < mapSizeX - 1)
-            if (!ct.eastViable)
+            if (!currentTile.eastViable)
             {
-                n = transform.Find("(" + (x + 1).ToString() + ", "
+                neighbor = transform.Find("(" + (x + 1).ToString() + ", "
                                     + y.ToString() + ", "
                                     + z.ToString() + ") ").gameObject.GetComponent<TileScript>();
-                n.westViable = false;
+                neighbor.westViable = false;
             }
 
         if (y > 0)
-            if (!ct.floor)
+            if (currentTile.floor)
             {
-                n = transform.Find("(" + x.ToString() + ", "
+                neighbor = transform.Find("(" + x.ToString() + ", "
                                     + (y - 1).ToString() + ", "
                                     + z.ToString() + ") ").gameObject.GetComponent<TileScript>();
-                n.ceiling = false;
+                neighbor.ceiling = true;
             }
 
         if (y < mapSizeY - 1)
-            if (!ct.ceiling)
+            if (currentTile.ceiling)
             {
-                n = transform.Find("(" + x.ToString() + ", "
+                neighbor = transform.Find("(" + x.ToString() + ", "
                                     + (y + 1).ToString() + ", "
                                     + z.ToString() + ") ").gameObject.GetComponent<TileScript>();
-                n.floor = false;
+                neighbor.floor = true;
             }
 
         if (z > 0)
-            if (!ct.southViable)
+            if (!currentTile.southViable)
             {
-				n = transform.Find("(" + x.ToString() + ", "
+				neighbor = transform.Find("(" + x.ToString() + ", "
 									+ y.ToString() + ", "
 									+ (z - 1).ToString() + ") ").gameObject.GetComponent<TileScript>();
-                n.northViable = false;
+                neighbor.northViable = false;
             }
 
         if (z < mapSizeZ - 1)
-            if (!ct.northViable)
+            if (!currentTile.northViable)
             {
-				n = transform.Find("(" + x.ToString() + ", "
+				neighbor = transform.Find("(" + x.ToString() + ", "
 									+ y.ToString() + ", "
 									+ (z + 1).ToString() + ") ").gameObject.GetComponent<TileScript>();
-                n.southViable = false;
+                neighbor.southViable = false;
             }
     }
 
@@ -242,7 +256,6 @@ public class MapMaker : MonoBehaviour {
 	}
 
 	public void GeneratePathTo(int x, int y, int z) {
-		// Clear out our unit's old path.
 		if (selectedUnit.name == "Strong" || selectedUnit.name == "Composite")
 			if (!selectedUnit.GetComponent<UnitBasics>().CheckSlope(x, y, z))
 				return;
@@ -350,6 +363,7 @@ public class MapMaker : MonoBehaviour {
 		// So we need to invert it!
 
 		path.Reverse();
+
 		if (!unit.vector || unit.plannedPath == null)
 			unit.plannedPath = path;
 		else
@@ -360,14 +374,14 @@ public class MapMaker : MonoBehaviour {
 
 	float CostToEnter(int currentX, int currentY, int currentZ, int newX, int newY, int newZ)
     {
-        if (CanEnter(currentX, currentY, currentZ, newX, newY, newZ))
+		if (CanEnter(currentX, currentY, currentZ, newX, newY, newZ))
         {
             TileType tt = tileTypes[tiles[newX, newY, newZ]];
             float cost = tt.movementcost;
             if (newX != currentX)
                 cost += .001f;
             if (newY != currentY)
-                cost += .001f;
+                cost += .003f;
             if (newZ != currentZ)
                 cost += .001f;
             return cost;
@@ -400,7 +414,9 @@ public class MapMaker : MonoBehaviour {
         TileScript nextData = next.GetComponent<TileScript>();
         TileScript currentData = current.GetComponent<TileScript>();
 
-		if (newY == currentY)
+		if (newY == currentY && nextData.floor
+			|| newY < currentY && !nextData.ceiling
+			|| newY > currentY && !currentData.ceiling)
 		{
 			if (newX == currentX)
 			{
@@ -418,42 +434,6 @@ public class MapMaker : MonoBehaviour {
 					return true;
 			}
 
-			//if (newX < currentX && newZ > currentZ) //NW
-			//{
-			//	if (currentData.northViable)
-			//		if (nextData.eastViable)
-			//			return true;
-			//	if (currentData.westViable)
-			//		if (nextData.southViable)
-			//			return true;
-			//}
-			//if (newX > currentX && newZ < currentZ) //NE
-			//{
-			//	if (currentData.northViable)
-			//		if (nextData.westViable)
-			//			return true;
-			//	if (currentData.eastViable)
-			//		if (nextData.southViable)
-			//			return true;
-			//}
-			//if (newX > currentX && newZ < currentZ) //SW
-			//{
-			//	if (currentData.southViable)
-			//		if (nextData.eastViable)
-			//			return true;
-			//	if (currentData.westViable)
-			//		if (nextData.northViable)
-			//			return true;
-			//}
-			//if (newX > currentX && newZ < currentZ) //SE
-			//{
-			//	if (currentData.southViable)
-			//		if (nextData.westViable)
-			//			return true;
-			//	if (currentData.eastViable)
-			//		if (nextData.northViable)
-			//			return true;
-			//}
 			if (newX < currentX && newZ > currentZ && currentData.northViable && currentData.westViable
 				&& nextData.southViable && nextData.eastViable)
 				return true;
