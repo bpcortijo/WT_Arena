@@ -3,16 +3,20 @@ using System.Collections;
 
 public class TileScript : MonoBehaviour {
     public MapMaker map;
+	public string effect = null;
 	public int tileX, tileY, tileZ;
 	public bool floor, ceiling, northViable, westViable, eastViable, southViable;
+	public int defendFloor, defendCeiling, defendNorth, defendWest, defendEast, defendSouth;
 
 	[HideInInspector]
 	public TileType tt;
 	public float movementcost = 1f;
 	public TileType.typeForArt direction;
+	
 
 	void Start()
 	{
+		DefenceReset();
 		gameObject.transform.localPosition = new Vector3(gameObject.transform.localPosition.x,
 									gameObject.transform.localPosition.y + .9f,
 									gameObject.transform.localPosition.z);
@@ -36,19 +40,34 @@ public class TileScript : MonoBehaviour {
 																	gameObject.transform.localRotation.z);
 	}
 
+
+
 	void OnMouseUp()
 	{
 		if (map.selectedUnit != null)
 		{
 			if (map.selectedUnit.GetComponent<ShotScript>() != null)
-				if (map.selectedUnit.GetComponent<ShotScript>().set)
-					return;
+				if (!map.selectedUnit.GetComponent<ShotScript>().set)
+					map.GeneratePathTo(tileX, tileY, tileZ);
 
 			if (map.selectedUnit.GetComponent<CharacterStats>() != null)
-				if (!map.selectedUnit.GetComponent<UnitBasics>().full)
+				if (map.selectedUnit.GetComponent<CharacterStats>().defending)
+					map.selectedUnit.GetComponent<CharacterStats>().selectedTile = this;
+				else if (!map.selectedUnit.GetComponent<UnitBasics>().full)
+				{
 					map.selectedUnit.GetComponent<CharacterStats>().actions.Add("Move");
-
-			map.GeneratePathTo(tileX, tileY, tileZ);
+					map.GeneratePathTo(tileX, tileY, tileZ);
+				}
 		}
+	}
+
+	public void DefenceReset()
+	{
+		defendFloor = 0;
+		defendCeiling = 0;
+		defendNorth = 0;
+		defendWest = 0;
+		defendEast = 0;
+		defendSouth = 0;
 	}
 }
