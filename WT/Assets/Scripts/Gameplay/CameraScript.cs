@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class CameraScript : MonoBehaviour
 {
+	bool turning;
 	public MapMaker mapCode;
 	int cameraLocation = 1, speed = 2;
 	public Vector3 sePos, swPos, nwPos, nePos;
@@ -12,16 +13,31 @@ public class CameraScript : MonoBehaviour
 	void Start()
     {
 		//Put camera at south-east position and rotation
+		mapCode = FindObjectOfType<MapMaker>();
 		switch (mapCode.mapName)
 		{
 			default:
+				sePos = new Vector3(-1.5f, 4, -1.5f);
+				swPos = new Vector3(10.5f, 4, -1.5f);
+				nwPos = new Vector3(10.5f, 4, 10.5f);
+				nePos = new Vector3(-1.5f, 4, 10.5f);
+				seRot.eulerAngles = new Vector3(40, 45, 0);
+				swRot.eulerAngles = new Vector3(40, 315, 0);
+				nwRot.eulerAngles = new Vector3(40, 225, 0);
+				neRot.eulerAngles = new Vector3(40, 135, 0);
 				break;
 		}
+		transform.position = sePos;
 	}
 
 	void Update()
 	{
-		/*switch (cameraLocation)
+		if (Input.GetKeyUp(KeyCode.LeftArrow))
+			cameraLocation--;
+		if (Input.GetKeyUp(KeyCode.RightArrow))
+			cameraLocation++;
+		
+		switch (cameraLocation)
 		{
 			case 1:
 				transform.position = Vector3.Lerp(transform.position, sePos, Time.deltaTime * speed);
@@ -47,6 +63,6 @@ public class CameraScript : MonoBehaviour
 				break;
 			default:
 				break;
-		}*/
+		}
 	}
 }
