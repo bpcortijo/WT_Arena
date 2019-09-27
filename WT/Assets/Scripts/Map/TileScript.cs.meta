@@ -1,8 +1,14 @@
 fileFormatVersion: 2
 guid: a15b72288dcaa8146bba583bf18da7fd
 MonoImporter:
+  externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - map: {instanceID: 0}
+  - shieldPrefab: {fileID: 6514151802545786564, guid: ab8dc7b13b4e7a14cb5014d75d781d61,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
+  assetBundleName: 
+  assetBundleVariant: 

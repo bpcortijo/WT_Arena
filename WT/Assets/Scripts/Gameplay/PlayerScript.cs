@@ -18,8 +18,6 @@ public class PlayerScript : MonoBehaviour
 		}
 	}
 
-
-
 	void Spawn()
 	{
 		foreach (GameObject character in characters)
@@ -76,6 +74,14 @@ public class PlayerScript : MonoBehaviour
 			canEnd = true;
 		foreach (GameObject unit in units)
 			unit.GetComponent<CharacterStats>().TakeActions();
+	}
+
+	public void TurnOver()
+	{
+		foreach (GameObject unit in units)
+			while (unit.GetComponent<CharacterStats>().defendingTiles.Count>0)
+				unit.GetComponent<CharacterStats>().StopBlocking();
+
 	}
 
 	bool CheckFour()

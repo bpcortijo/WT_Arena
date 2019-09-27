@@ -106,9 +106,16 @@ public class ShotScript : MonoBehaviour
 
 	public void Impact(CharacterStats character, float percent, bool canBeCrit) // Deal damage
 	{
-		if (percent == 1 && canBeCrit)
-			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, true);
+		if (canBeCrit)
+			if (percent == 1f)
+				character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, 3, owner.GetComponent<CharacterStats>());
+			else if (percent >= .66f)
+				character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, 2, owner.GetComponent<CharacterStats>());
+			else if (percent >= .25f)
+				character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, 1, owner.GetComponent<CharacterStats>());
+			else
+				character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, 0, owner.GetComponent<CharacterStats>());
 		else
-			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, false);
+			character.DamageCharacter(power * percent, CharacterStats.DamageTypes.Shot, 0, owner.GetComponent<CharacterStats>());
 	}
 }

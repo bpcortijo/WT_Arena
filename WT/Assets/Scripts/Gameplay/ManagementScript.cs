@@ -6,9 +6,10 @@ using UnityEngine.SceneManagement;
 public class ManagementScript : MonoBehaviour {
 	MapMaker mapCode;
 	public GameObject map;
+	bool activeTurn = false;
+	public float turnTimer=999f, turnTime = 90f;
 	public List<GameObject> startingPlayers, players;
-
-	public int turn = 1, playersLeft = 1, endTurnRequests = 0;
+	public int turn = 1, maxTurns = 60, playersLeft = 1, endTurnRequests = 0;
 
 	private void OnEnable()
 	{
@@ -23,17 +24,23 @@ public class ManagementScript : MonoBehaviour {
 			map = Instantiate(map);
 			mapCode = map.GetComponent<MapMaker>();
 			CreatePlayers();
+
+			turnTimer = turnTime + 30f;
+			activeTurn = true;
+			// Get Light
 		}
 	}
 
     void Update()
     {
-		if (endTurnRequests == playersLeft && endTurnRequests != 0)
+		if (activeTurn)
+			turnTimer -= Time.deltaTime;
+		if (endTurnRequests == playersLeft && endTurnRequests != 0 || turnTimer <= 0)
 			NextTurn();
     }
 
-    void NextTurn()
-    {
+	void NextTurn()
+	{
 		GameObject go = mapCode.selectedUnit;
 		endTurnRequests = 0;
 
@@ -58,7 +65,8 @@ public class ManagementScript : MonoBehaviour {
 		GetCharacterPaths();
 		mapCode.GetAttackPaths();
 		mapCode.CheckAllPaths();
-//		EditPaths(mapCode.characterPaths);
+
+		// rotate light -.125 degrees on the x axis
 
 		foreach (GameObject p in players)
 		{
@@ -74,11 +82,17 @@ public class ManagementScript : MonoBehaviour {
 
 		turn++;
 		StartCoroutine(EndTurn());
-		Debug.Log("It's a NEW TURN");
-		foreach (GameObject p in players)
+		if (turn >= maxTurns || playersLeft <= 1)
+			EndGame();
+		else
 		{
-			PlayerScript player = p.GetComponent<PlayerScript>();
-			player.canEnd = true;
+			foreach (GameObject p in players)
+			{
+				PlayerScript player = p.GetComponent<PlayerScript>();
+				player.TurnOver();
+				player.canEnd = true;
+			}
+			turnTimer = turnTime;
 		}
 	}
 

@@ -7,7 +7,7 @@ public class CharacterStats : MonoBehaviour
 	public int age;
 	public GameObject headShot, bodyShot;
 
-	int speed, health, shot, ammo;
+	public int speed, health, shot, ammo, defence = 2;
 
 	[HideInInspector]
 	public int movementActions = 2;
@@ -21,11 +21,18 @@ public class CharacterStats : MonoBehaviour
 	public List<string> loadout;
 	public GameObject[] shotTypes;
 	public int agility = 1, energy = 1, experience = 1;
-	public bool attacking, bleeding = false, reloading = false;
+	public bool attacking = false, reloading = false, defending = false, severed=false;
+	public int bleeding = 0, disabled = 0;
 
 	List<GameObject> shooting = new List<GameObject>();
+	List<string> defendingDirections = new List<string>();
+	public List<TileScript> defendingTiles = new List<TileScript>();
+	Dictionary<CharacterStats, int> damageTracker = new Dictionary<CharacterStats, int>();
 
-	public enum DamageTypes {Shot, Stabbed, Slashed, Crushed}
+	public TileScript selectedTile = null;
+
+	public enum CritFX { Bleed, Sever, True }
+	public enum DamageTypes { Shot, Stabbed, Slashed, Bleed }
 
 	void Start()
     {
@@ -93,11 +100,24 @@ public class CharacterStats : MonoBehaviour
 				}
 				if (Input.GetKeyUp(KeyCode.R))
 				{
+					actions.Add("Reload");
 					if (loadout.Contains("4shot"))
 						Reload(0);
 					else
 						reloading = true;
 				}
+			}
+
+			if (Input.GetKeyUp(KeyCode.D))
+				if (defending)
+					defending = false;
+				else
+					defending = true;
+
+			if (defending && defendingTiles.Count >= defence)
+			{
+				defending = false;
+				selectedTile = null;
 			}
 
 			if (Input.GetMouseButtonUp(1))
@@ -108,6 +128,7 @@ public class CharacterStats : MonoBehaviour
 
 	public void TakeActions()
 	{
+		defending = false;
 		while (movementActions>0)
 		{
 			basics.Move();
@@ -115,7 +136,7 @@ public class CharacterStats : MonoBehaviour
 		}
 
 		basics.CheckPath();
-
+		basics.full = false;
 		basics.plannedPath = null;
 		basics.keyPoints.Clear();
 		movementActions = 2;
@@ -285,19 +306,105 @@ public class CharacterStats : MonoBehaviour
 		shooting.RemoveAt(shooting.Count - 1);
 	}
 
+	public void BlockTile(string direction)
+	{
+		actions.Add("Block");
+		defendingTiles.Add(selectedTile);
+		defendingDirections.Add(direction);
+
+		switch (direction)
+		{
+			case "North":
+				selectedTile.defendNorth++;
+				selectedTile.CreateVisualShields(direction);
+				break;
+			case "West":
+				selectedTile.defendWest++;
+				selectedTile.CreateVisualShields(direction);
+				break;
+			case "East":
+				selectedTile.defendEast++;
+				selectedTile.CreateVisualShields(direction);
+				break;
+			case "South":
+				selectedTile.defendSouth++;
+				selectedTile.CreateVisualShields(direction);
+				break;
+			case "Up":
+				selectedTile.defendCeiling++;
+				selectedTile.CreateVisualShields(direction);
+				break;
+			case "Down":
+				selectedTile.defendFloor++;
+				selectedTile.CreateVisualShields(direction);
+				break;
+			default:
+				break;
+		}
+	}
+
+	public void StopBlocking()
+	{
+		int i = defendingTiles.Count - 1;
+		switch (defendingDirections[i])
+		{
+			case "North":
+				defendingTiles[i].defendNorth--;
+				if (defendingTiles[i].defendNorth == 0)
+					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+				break;
+			case "West":
+				defendingTiles[i].defendWest--;
+				if (defendingTiles[i].defendWest == 0)
+					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+				break;
+			case "East":
+				defendingTiles[i].defendEast--;
+				if (defendingTiles[i].defendEast == 0)
+					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+				break;
+			case "South":
+				defendingTiles[i].defendSouth--;
+				if (defendingTiles[i].defendSouth == 0)
+					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+				break;
+			case "Up":
+				defendingTiles[i].defendCeiling--;
+				if (defendingTiles[i].defendCeiling == 0)
+					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+				break;
+			case "Down":
+				defendingTiles[i].defendFloor--;
+				if (defendingTiles[i].defendFloor == 0)
+					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+				break;
+			default:
+				break;
+		}
+
+		defendingTiles.RemoveAt(i);
+		defendingDirections.RemoveAt(i);
+	}
+
 	public void CancelAction(string act)
 	{
 		if (act != null)
 		{
 			if (act == "Move")
-			{
 				MoveClear();
-			}
+
+			else if (act == "Block")
+				StopBlocking();
+
+			else if (act=="Reload")
+				reloading = false;
+
 			else
 			{
 				movementActions++;
 				basics.CheckPath();
 			}
+
 			if (act == "Shoot")
 			{
 				if (loadout.Contains("4shot"))
@@ -331,9 +438,38 @@ public class CharacterStats : MonoBehaviour
 		basics.CheckPath();
 	}
 
-	public void DamageCharacter(float damage, DamageTypes damageType, bool crit)
+	public void DamageCharacter(float damage, DamageTypes damageType, int crit, CharacterStats damageDealer)
 	{
-		health -= Mathf.RoundToInt(damage * 4);
+		switch(crit)
+		{
+			case 1:
+				bleeding++;
+				break;
+			case 2:
+				bleeding++;
+				severed=true;
+				break;
+			case 3:
+				damage*=4;
+				bleeding += 4;
+				break;
+			default:
+				break;
+		}
+
+		int recievingDamage;
+
+		if (damageType != DamageTypes.Bleed)
+			recievingDamage = Mathf.RoundToInt(damage * 4);
+		else
+			recievingDamage = Mathf.RoundToInt(damage);
+
+		if (!damageTracker.ContainsKey(damageDealer))
+			damageTracker.Add(damageDealer, recievingDamage);
+		else
+			damageTracker[damageDealer] += recievingDamage;
+
+		health -= recievingDamage;
 		if (health <= 0)
 			Die(damageType);
 	}

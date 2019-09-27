@@ -1,0 +1,24 @@
+Server side:
+	Character:
+		positions
+		paths
+		defended tile
+		speed
+			bonus
+		health
+		perks (Once)
+	Shot:
+		positions
+		paths
+		damage
+	Tiles:
+		health / Defense
+
+Client Side:
+	Player:
+		Vision
+			Fog of War
+	Character:
+		Perks
+		Air Movement (Falling)
+

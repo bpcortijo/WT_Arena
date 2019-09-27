@@ -8,7 +8,7 @@ public class MapMaker : MonoBehaviour {
     int[,,] tiles;
     public Node[,,] graph;
 	int focusedHeight = 0;
-	public string mapName;
+	public string mapName = null;
 
     int mapSizeX = 10, mapSizeY = 1, mapSizeZ = 10;
 
@@ -20,6 +20,8 @@ public class MapMaker : MonoBehaviour {
 
 	public List<ShotScript> attackPaths;
 	public List<CharacterStats> characterPaths;
+
+	public float turnMovementTime = 5;
 
 	void Start() {
         CreateMap();
@@ -401,7 +403,7 @@ public class MapMaker : MonoBehaviour {
             return 99f;
     }
 
-    bool CanEnter(int currentX, int currentY, int currentZ, int newX, int newY, int newZ)
+    public bool CanEnter(int currentX, int currentY, int currentZ, int newX, int newY, int newZ)
     {
         GameObject next = transform.Find("(" + newX.ToString() + ", "
                                         + newY.ToString() + ", "
@@ -415,39 +417,43 @@ public class MapMaker : MonoBehaviour {
         TileScript currentData = current.GetComponent<TileScript>();
 
 		if (newY == currentY && nextData.floor
-			|| newY < currentY && !nextData.ceiling
-			|| newY > currentY && !currentData.ceiling)
+			|| newY < currentY && !nextData.ceiling && nextData.defendCeiling < 3
+			|| newY > currentY && !currentData.ceiling && currentData.floor && currentData.defendCeiling < 3
+			|| newY > currentY && !currentData.ceiling && currentData.defendFloor >= 3 && currentData.defendCeiling < 3)
 		{
 			if (newX == currentX)
 			{
-				if (newZ > currentZ && currentData.northViable)
+				if (newZ > currentZ && currentData.northViable && currentData.defendNorth < 3 && nextData.defendSouth < 3)
 					return true;
-				if (newZ < currentZ && currentData.southViable)
+				if (newZ < currentZ && currentData.southViable && currentData.defendSouth < 3 && nextData.defendNorth < 3)
 					return true;
 			}
 
 			if (newZ == currentZ)
 			{
-				if (newX < currentX && currentData.westViable)
+				if (newX < currentX && currentData.westViable && currentData.defendWest < 3 && nextData.defendEast < 3)
 					return true;
-				if (newX > currentX && currentData.eastViable)
+				if (newX > currentX && currentData.eastViable && currentData.defendEast < 3 && nextData.defendWest < 3)
 					return true;
 			}
 
 			if (newX < currentX && newZ > currentZ && currentData.northViable && currentData.westViable
-				&& nextData.southViable && nextData.eastViable)
+				&& nextData.southViable && nextData.eastViable && currentData.defendNorth < 3
+				&& currentData.defendWest < 3 && nextData.defendSouth < 3 && nextData.defendEast < 3)
 				return true;
 			if (newX > currentX && newZ > currentZ && currentData.northViable && currentData.eastViable
-				&& nextData.southViable && nextData.westViable)
+				&& nextData.southViable && nextData.westViable && currentData.defendNorth < 3
+				&& currentData.defendEast < 3 && nextData.defendSouth < 3 && nextData.defendWest < 3)
 				return true;
 			if (newX < currentX && newZ < currentZ && currentData.southViable && currentData.westViable
-				&& nextData.northViable && nextData.eastViable)
+				&& nextData.northViable && nextData.eastViable && currentData.defendSouth < 3
+				&& currentData.defendWest < 3 && nextData.defendNorth < 3 && nextData.defendEast < 3)
 				return true;
 			if (newX > currentX && newZ < currentZ && currentData.southViable && currentData.eastViable
-				&& nextData.northViable && nextData.westViable)
+				&& nextData.northViable && nextData.westViable && currentData.defendSouth < 3
+				&& currentData.defendEast < 3 && nextData.defendNorth < 3 && nextData.defendWest < 3)
 				return true;
 		}
-
 		return false;
     }
 
@@ -479,7 +485,8 @@ public class MapMaker : MonoBehaviour {
 		foreach (CharacterStats character in characterPaths)
 			CheckIfCrossed(character);
 
-		float currentTiming=99f;
+		Node currentPoint = null;
+		float currentTiming =99f;
 		CharacterStats currentHit=null;
 
 		foreach (ShotScript atk in attackPaths)
@@ -487,23 +494,30 @@ public class MapMaker : MonoBehaviour {
 			foreach (Node point in atk.basics.shortPath)
 				foreach (CharacterStats character in characterPaths)
 				{
-					if (character.basics.shortPath.Contains(point))
+					if (character.basics.shortPath.Contains(point)&&atk.owner.transform.parent!=character.transform.parent)
 					{
 						float timing = character.basics.shortPath.IndexOf(point) / character.basics.speed;
 						if (timing < currentTiming)
 						{
 							currentHit = character;
 							currentTiming = timing;
+							currentPoint = point;
 						}
 					}
 					break;
 				}
-			if (currentTiming == 0)
-				atk.Impact(currentHit, currentTiming, false);
-			else if (currentHit.movementActions > 1)
-				atk.Impact(currentHit, currentTiming / 2, true);
-			else
-				atk.Impact(currentHit, currentTiming, true);
+
+			//Damage breakdown
+			if (currentHit != null)
+			{
+				if (currentHit.basics.shortPath.Count == 1)
+					atk.Impact(currentHit, 1, false);
+				else
+				{
+					float damagePercent = currentHit.basics.shortPath.IndexOf(currentPoint) / currentHit.basics.shortPath.Count - 1;
+					atk.Impact(currentHit, damagePercent, true);
+				}
+			}
 		}
 
 		attackPaths.Clear();

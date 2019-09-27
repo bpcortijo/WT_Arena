@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class UnitBasics : MonoBehaviour {
 	public int speed, bonus;
-	public float PieceMovementTime = 3, tempTime;
+	public float lerpTimePerspace = 5;
 
 	public MapMaker map;
 	public float unitHeight = 1f;
@@ -13,6 +13,8 @@ public class UnitBasics : MonoBehaviour {
 	public List<MapMaker.Node> shortPath = null;
 	public List<MapMaker.Node> plannedPath = null;
 	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
+
+	public float lerpSpeed;
 
 	public void CheckPath()
 	{
@@ -96,6 +98,50 @@ public class UnitBasics : MonoBehaviour {
 			}
 		}
     }
+
+	public void ReMapMovement()
+	{
+		foreach (MapMaker.Node node in shortPath)
+			CheckPlayerMovementTile(node);
+	}
+
+	void CheckPlayerMovementTile(MapMaker.Node node)
+	{
+		TileScript standingTile = map.GetTileFromNode(node);
+		if (GetComponent<CharacterStats>() != null)
+		{
+			if (standingTile.effect != null)
+			{
+				switch (standingTile.effect)
+				{
+					case "spider":
+						bonus--;
+						CheckPath();
+						break;
+					case "python":
+						if (gameObject.GetComponent<CharacterStats>() != null)
+							gameObject.GetComponent<CharacterStats>().disabled = 3;
+						break;
+					default:
+						break;
+				}
+			}
+
+			/*foreach (ShotScript atk in map.attackPaths)
+				foreach (MapMaker.Node atkStep in atk.basics.shortPath)
+					if (node==atkStep)
+						//Play shot animation
+						*/
+
+			if (shortPath.IndexOf(node) < shortPath.Count - 1)
+			{
+				MapMaker.Node nextNode = shortPath[shortPath.IndexOf(node)+1];
+				if (!map.CanEnter(node.x, node.y, node.z, nextNode.x, nextNode.y, nextNode.z))
+					while (shortPath.Count + 1 > shortPath.IndexOf(node))
+						shortPath.Remove(shortPath[shortPath.Count - 1]);
+			}
+		}
+	}
 
 	public void Move()
 	{
