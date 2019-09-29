@@ -36,7 +36,7 @@ public class MapMaker : MonoBehaviour {
 
 			default:
 				mapSizeX = 10;
-				mapSizeY = 2;
+				mapSizeY = 3;
 				mapSizeZ = 10;
 
 				GenerateMapData();
@@ -64,6 +64,9 @@ public class MapMaker : MonoBehaviour {
 			for (y = 0; y < mapSizeY; y++)
 				for (z = 0; z < mapSizeZ; z++)
 					tiles[x, y, z] = 1;
+		for (x = 0; x < mapSizeX; x++)
+				for (z = 0; z < mapSizeZ; z++)
+					tiles[x, 2, z] = 0;
 	}
 
 	void GeneratePathfindingGraph() {
@@ -512,11 +515,13 @@ public class MapMaker : MonoBehaviour {
 			{
 				if (currentHit.basics.shortPath.Count == 1)
 					atk.Impact(currentHit, 1, false);
-				else
+				else if (currentHit.basics.shortPath.IndexOf(currentPoint) != 0 || !currentHit.quickstep)
 				{
 					float damagePercent = currentHit.basics.shortPath.IndexOf(currentPoint) / currentHit.basics.shortPath.Count - 1;
 					atk.Impact(currentHit, damagePercent, true);
 				}
+				else
+					Debug.Log("Quick Step");
 			}
 		}
 

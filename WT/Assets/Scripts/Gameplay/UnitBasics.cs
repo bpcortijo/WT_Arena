@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 public class UnitBasics : MonoBehaviour {
-	public int speed, bonus;
+	public int speed, bonus, nextBonus;
 	public float lerpTimePerspace = 5;
 
 	public MapMaker map;
@@ -27,6 +27,9 @@ public class UnitBasics : MonoBehaviour {
 				if (gameObject.GetComponent<CharacterStats>().actions.Contains("Reload"))
 				{
 					// Reloading is a free action while moving
+					if (gameObject.GetComponent<CharacterStats>().movementActions + 1 == 2 && gameObject.GetComponent<CharacterStats>().sprinter)
+						bonus += 2;
+
 					while (shortPath.Count > speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
 						shortPath.RemoveAt(shortPath.Count - 1);
 					if (shortPath.Count == speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
@@ -34,6 +37,8 @@ public class UnitBasics : MonoBehaviour {
 				}
 				else
 				{
+					if (gameObject.GetComponent<CharacterStats>().movementActions == 2 && gameObject.GetComponent<CharacterStats>().sprinter)
+						bonus += 2;
 					while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
 						shortPath.RemoveAt(shortPath.Count - 1);
 					if (shortPath.Count == speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
@@ -146,10 +151,13 @@ public class UnitBasics : MonoBehaviour {
 	public void Move()
 	{
 		int s = 1;  // Spaces
-
 		if (shortPath != null)	// Check if character is movin
 			if (shortPath.Count > 1)
 			{
+				tileX = shortPath[shortPath.Count - 1].x;
+				tileY = shortPath[shortPath.Count - 1].y;
+				tileZ = shortPath[shortPath.Count - 1].z;
+
 				while (s < speed && s<shortPath.Count)
 				{
 					transform.position = map.TileCoordToWorldCoord(shortPath[s].x,
@@ -157,18 +165,6 @@ public class UnitBasics : MonoBehaviour {
 																	shortPath[s].z);
 					s++;
 				}
-				if (s == shortPath.Count)
-				{
-					tileX = shortPath[s - 1].x;
-					tileY = shortPath[s - 1].y;
-					tileZ = shortPath[s - 1].z;
-				}
-				else // If they didn't finish moving remove the spaces they already went
-					while (s >= 0)
-					{
-						shortPath.RemoveAt(0);
-						s--;
-					}
 			}
 	}
 

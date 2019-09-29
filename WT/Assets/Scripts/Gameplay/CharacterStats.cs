@@ -9,6 +9,9 @@ public class CharacterStats : MonoBehaviour
 
 	public int speed, health, shot, ammo, defence = 2;
 
+	//Perks
+	public bool quickstep = false, sprinter = false, disengagement = false;
+
 	[HideInInspector]
 	public int movementActions = 2;
 	[HideInInspector]
@@ -22,17 +25,18 @@ public class CharacterStats : MonoBehaviour
 	public GameObject[] shotTypes;
 	public int agility = 1, energy = 1, experience = 1;
 	public bool attacking = false, reloading = false, defending = false, severed=false;
-	public int bleeding = 0, disabled = 0;
+	public int disabled = 0;
 
 	List<GameObject> shooting = new List<GameObject>();
 	List<string> defendingDirections = new List<string>();
 	public List<TileScript> defendingTiles = new List<TileScript>();
 	Dictionary<CharacterStats, int> damageTracker = new Dictionary<CharacterStats, int>();
+	List<CharacterStats> bleedCausers = new List<CharacterStats>();
 
 	public TileScript selectedTile = null;
 
 	public enum CritFX { Bleed, Sever, True }
-	public enum DamageTypes { Shot, Stabbed, Slashed, Bleed }
+	public enum DamageTypes { Shot, Slashed, Bleed }
 
 	void Start()
     {
@@ -85,19 +89,34 @@ public class CharacterStats : MonoBehaviour
 			else if (movementActions > 0)
 			{
 				if (Input.GetKeyUp(KeyCode.S))
-				{
-					if (loadout.Contains("4shot"))
-						PistolShot();
-					if (loadout.Contains("SMG"))
-						SubShot();
-					if (loadout.Contains("AR"))
-						RifleShot();
-					if (loadout.Contains("Sniper"))
-						SniperShot();
-					if (loadout.Contains("Shotgun"))
-						ShotgunShot();
-					actions.Add("Shoot");
-				}
+					if (Input.GetKey(KeyCode.LeftShift) && disabled <= 0)
+					{
+						if (loadout.Contains("4shot"))
+							SuperPistolShot();
+						if (loadout.Contains("SMG"))
+							SuperSubShot();
+						if (loadout.Contains("AR"))
+							SuperRifleShot();
+						if (loadout.Contains("Sniper"))
+							SuperSniperShot();
+						if (loadout.Contains("Shotgun"))
+							SuperShotgunShot();
+						actions.Add("Shoot");
+					}
+					else
+					{
+						if (loadout.Contains("4shot"))
+							PistolShot();
+						if (loadout.Contains("SMG"))
+							SubShot();
+						if (loadout.Contains("AR"))
+							RifleShot();
+						if (loadout.Contains("Sniper"))
+							SniperShot();
+						if (loadout.Contains("Shotgun"))
+							ShotgunShot();
+						actions.Add("Shoot");
+					}
 				if (Input.GetKeyUp(KeyCode.R))
 				{
 					actions.Add("Reload");
@@ -135,8 +154,13 @@ public class CharacterStats : MonoBehaviour
 			movementActions--;
 		}
 
+		foreach (CharacterStats bleedTick in bleedCausers)
+			DamageCharacter(4, DamageTypes.Bleed, 0, bleedTick);
+
 		basics.CheckPath();
 		basics.full = false;
+		basics.bonus = basics.nextBonus;
+		basics.nextBonus = 0;
 		basics.plannedPath = null;
 		basics.keyPoints.Clear();
 		movementActions = 2;
@@ -279,8 +303,12 @@ public class CharacterStats : MonoBehaviour
 		Vector3 adjustedPos = new Vector3(transform.position.x, 
 											transform.position.y + basics.unitHeight / 2, 
 											transform.position.z);
+
 		GameObject shot = Instantiate(ammo, adjustedPos, Quaternion.identity);
 		ShotScript ss = shot.GetComponent<ShotScript>();
+
+		if (ammo.name == "Strong")
+			power += 1;
 
 		ss.speed = speed;
 		ss.power = power;
@@ -438,38 +466,37 @@ public class CharacterStats : MonoBehaviour
 		basics.CheckPath();
 	}
 
-	public void DamageCharacter(float damage, DamageTypes damageType, int crit, CharacterStats damageDealer)
+	public void DamageCharacter(int damage, DamageTypes damageType, int crit, CharacterStats damageDealer)
 	{
 		switch(crit)
 		{
 			case 1:
-				bleeding++;
+				bleedCausers.Add(damageDealer);
 				break;
 			case 2:
-				bleeding++;
-				severed=true;
+				bleedCausers.Add(damageDealer);
+				severed = true;
 				break;
 			case 3:
 				damage*=4;
-				bleeding += 4;
+				bleedCausers.Add(damageDealer);
+				bleedCausers.Add(damageDealer);
+				bleedCausers.Add(damageDealer);
+				bleedCausers.Add(damageDealer);
 				break;
 			default:
 				break;
 		}
 
-		int recievingDamage;
-
-		if (damageType != DamageTypes.Bleed)
-			recievingDamage = Mathf.RoundToInt(damage * 4);
-		else
-			recievingDamage = Mathf.RoundToInt(damage);
+		if (damageType == DamageTypes.Slashed && disengagement)
+			basics.nextBonus += 3;
 
 		if (!damageTracker.ContainsKey(damageDealer))
-			damageTracker.Add(damageDealer, recievingDamage);
+			damageTracker.Add(damageDealer, damage);
 		else
-			damageTracker[damageDealer] += recievingDamage;
+			damageTracker[damageDealer] += damage;
 
-		health -= recievingDamage;
+		health -= damage;
 		if (health <= 0)
 			Die(damageType);
 	}
