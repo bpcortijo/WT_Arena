@@ -5,17 +5,24 @@ using UnityEngine;
 public class ShotScript : MonoBehaviour
 {
 	MapMaker map;
-	public bool set = false;
 	public UnitBasics basics;
-	public int speed, power, range;
 	public GameObject target, owner;
+	public bool set = false, firstTurn = true;
+	public int speed, power, range, movingPower;
 
 	void Start()
 	{
 		map = owner.GetComponent<UnitBasics>().map;
 		basics.map = map;
 		basics.speed = speed;
-		basics.turns = range;
+		basics.turns = range/speed;
+		movingPower = power;
+	}
+
+	public void DamageOwner()
+	{
+		firstTurn = false;
+		owner.GetComponent<CharacterStats>().health -= Mathf.RoundToInt(Mathf.Pow(2,power));
 	}
 
 	void Update()
@@ -34,22 +41,12 @@ public class ShotScript : MonoBehaviour
 		}
 	}
 
-	public void Attack()
-	{
-		basics.Move();
-		basics.turns--;
-		if (gameObject.name == "Hunter")
-		{
-			Hunter();
-			basics.CheckPath();
-		}
-	}
-
 	public void Hunter()
 	{
 		int targetX, targetY, targetZ;
 		GameObject prevUnit = map.selectedUnit;
 		map.selectedUnit = gameObject;
+
 		if (target.GetComponent<UnitBasics>() != null)
 		{
 			targetX = target.GetComponent<UnitBasics>().tileX;
@@ -66,6 +63,7 @@ public class ShotScript : MonoBehaviour
 		map.GeneratePathTo(targetX, targetY, targetZ);
 
 		map.selectedUnit = prevUnit;
+		basics.CheckPath();
 	}
 
 	public void ShotClear()
@@ -118,5 +116,15 @@ public class ShotScript : MonoBehaviour
 				character.DamageCharacter(damage, CharacterStats.DamageTypes.Shot, 0, owner.GetComponent<CharacterStats>());
 		else
 			character.DamageCharacter(damage, CharacterStats.DamageTypes.Shot, 0, owner.GetComponent<CharacterStats>());
+	}
+
+	public void AfterTurn()
+	{
+		set = true;
+		basics.ClearLastShotMove();
+		basics.shortPath.Clear();
+		if (target != null)
+			Hunter();
+		basics.CheckPath();
 	}
 }

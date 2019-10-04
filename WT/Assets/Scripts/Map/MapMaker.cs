@@ -41,13 +41,14 @@ public class MapMaker : MonoBehaviour {
 
 				GenerateMapData();
 
-				tiles[3, 0, 5] = 5;
+				tiles[3, 0, 5] = 8;
+				tiles[3, 1, 5] = 0;
 				tiles[5, 1, 5] = 0;
-				tiles[4, 0, 5] = 2;
-				tiles[5, 0, 5] = 2;
-				tiles[3, 0, 4] = 3;
-				tiles[3, 0, 3] = 3;
-				tiles[3, 0, 1] = 3;
+				tiles[4, 0, 5] = 3;
+				tiles[5, 0, 5] = 3;
+				tiles[3, 0, 4] = 4;
+				tiles[3, 0, 3] = 4;
+				tiles[3, 0, 1] = 4;
 				break;
 		}
     }
@@ -260,10 +261,15 @@ public class MapMaker : MonoBehaviour {
 		return new Vector3(x, y, z);
 	}
 
+	public void AddToPath(UnitBasics unit, int x, int y, int z)
+	{
+		unit.shortPath.Add(graph[x, y, z]);
+	}
+
 	public void GeneratePathTo(int x, int y, int z) {
-		if (selectedUnit.name == "Strong" || selectedUnit.name == "Composite")
-			if (!selectedUnit.GetComponent<UnitBasics>().CheckSlope(x, y, z))
-				return;
+		//if (selectedUnit.name == "Strong" || selectedUnit.name == "Composite")
+		//	if (!selectedUnit.GetComponent<UnitBasics>().CheckSlope(x, y, z))
+		//		return;
 
 		Node source = null;
 		List<Node> path = new List<Node>();
@@ -276,6 +282,7 @@ public class MapMaker : MonoBehaviour {
 					unit.tileY,
 					unit.tileZ
 					];
+
 		else if (unit.plannedPath.Count <= 1)
 		{
 			source = graph[
@@ -367,6 +374,7 @@ public class MapMaker : MonoBehaviour {
 		// Right now, currentPath describes a route from out target to our source
 		// So we need to invert it!
 
+		path.Add(graph[unit.tileX, unit.tileY, unit.tileZ]);
 		path.Reverse();
 
 		if (!unit.vector || unit.plannedPath == null)
@@ -419,10 +427,7 @@ public class MapMaker : MonoBehaviour {
         TileScript nextData = next.GetComponent<TileScript>();
         TileScript currentData = current.GetComponent<TileScript>();
 
-		if (newY == currentY && nextData.floor
-			|| newY < currentY && !nextData.ceiling && nextData.defendCeiling < 3
-			|| newY > currentY && !currentData.ceiling && currentData.floor && currentData.defendCeiling < 3
-			|| newY > currentY && !currentData.ceiling && currentData.defendFloor >= 3 && currentData.defendCeiling < 3)
+		if (newY == currentY && nextData.floor)
 		{
 			if (newX == currentX)
 			{
@@ -455,6 +460,71 @@ public class MapMaker : MonoBehaviour {
 			if (newX > currentX && newZ < currentZ && currentData.southViable && currentData.eastViable
 				&& nextData.northViable && nextData.westViable && currentData.defendSouth < 3
 				&& currentData.defendEast < 3 && nextData.defendNorth < 3 && nextData.defendWest < 3)
+				return true;
+		}
+
+		if (newY < currentY && !nextData.ceiling && nextData.defendCeiling < 3)
+		{
+			if (newX == currentX)
+			{
+				if (newZ > currentZ && currentData.northViable && currentData.defendNorth < 3)
+					return true;
+				if (newZ < currentZ && currentData.southViable && currentData.defendSouth < 3)
+					return true;
+			}
+
+			if (newZ == currentZ)
+			{
+				if (newX < currentX && currentData.westViable && currentData.defendWest < 3)
+					return true;
+				if (newX > currentX && currentData.eastViable && currentData.defendEast < 3)
+					return true;
+			}
+
+			if (newX < currentX && newZ > currentZ && currentData.northViable && currentData.westViable
+				&& currentData.defendNorth < 3 && currentData.defendWest < 3)
+				return true;
+			if (newX > currentX && newZ > currentZ && currentData.northViable && currentData.eastViable
+				&& currentData.defendNorth < 3 && currentData.defendEast < 3)
+				return true;
+			if (newX < currentX && newZ < currentZ && currentData.southViable && currentData.westViable
+				&& currentData.defendSouth < 3 && currentData.defendWest < 3)
+				return true;
+			if (newX > currentX && newZ < currentZ && currentData.southViable && currentData.eastViable
+				&& currentData.defendSouth < 3 && currentData.defendEast < 3)
+				return true;
+		}
+
+		if (newY > currentY && !currentData.ceiling && currentData.floor && currentData.defendCeiling < 3
+			|| newY > currentY && !currentData.ceiling && currentData.defendFloor >= 3 && currentData.defendCeiling < 3)
+		{
+			if (newX == currentX)
+			{
+				if (newZ > currentZ && nextData.southViable && nextData.defendSouth < 3)
+					return true;
+				if (newZ < currentZ && nextData.northViable && nextData.defendNorth < 3)
+					return true;
+			}
+
+			if (newZ == currentZ)
+			{
+				if (newX < currentX && nextData.eastViable && nextData.defendEast < 3)
+					return true;
+				if (newX > currentX && nextData.westViable && nextData.defendWest < 3)
+					return true;
+			}
+
+			if (newX < currentX && newZ > currentZ
+				&& nextData.southViable && nextData.eastViable && nextData.defendSouth < 3 && nextData.defendEast < 3)
+				return true;
+			if (newX > currentX && newZ > currentZ
+				&& nextData.southViable && nextData.westViable && nextData.defendSouth < 3 && nextData.defendWest < 3)
+				return true;
+			if (newX < currentX && newZ < currentZ
+				&& nextData.northViable && nextData.eastViable && nextData.defendNorth < 3 && nextData.defendEast < 3)
+				return true;
+			if (newX > currentX && newZ < currentZ
+				&& nextData.northViable && nextData.westViable && nextData.defendNorth < 3 && nextData.defendWest < 3)
 				return true;
 		}
 		return false;

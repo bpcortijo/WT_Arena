@@ -67,22 +67,22 @@ public class CharacterStats : MonoBehaviour
 			{
 				if (Input.GetKeyUp(KeyCode.Alpha1))
 				{
-					shot = 0;
+					Reload(0);
 					reloading = false;
 				}
 					if (Input.GetKeyUp(KeyCode.Alpha2)) { }
 				{
-					shot = 1;
+					Reload(1);
 					reloading = false;
 				}
 				if (Input.GetKeyUp(KeyCode.Alpha3)) { }
 				{
-					shot = 2;
+					Reload(2);
 					reloading = false;
 				}
 				if (Input.GetKeyUp(KeyCode.Alpha4)) { }
 				{
-					shot = 3;
+					Reload(3);
 					reloading = false;
 				}
 			}
@@ -145,25 +145,23 @@ public class CharacterStats : MonoBehaviour
 		}
 	}
 
-	public void TakeActions()
+	public void AfterTurnReset()
 	{
 		defending = false;
-		while (movementActions>0)
-		{
-			basics.Move();
-			movementActions--;
-		}
 
 		foreach (CharacterStats bleedTick in bleedCausers)
 			DamageCharacter(4, DamageTypes.Bleed, 0, bleedTick);
 
-		basics.CheckPath();
-		basics.full = false;
 		basics.bonus = basics.nextBonus;
 		basics.nextBonus = 0;
-		basics.plannedPath = null;
-		basics.keyPoints.Clear();
 		movementActions = 2;
+
+		basics.full = false;
+		basics.keyPoints.Clear();
+		basics.shortPath.Clear();
+		basics.plannedPath.Clear();
+		basics.CheckPath();
+
 	}
 
 	void Undo()
@@ -174,10 +172,12 @@ public class CharacterStats : MonoBehaviour
 	void PistolShot()
 	{
 		shot++;
+		if (shot >= 4)
+			shot = 0;
 		movementActions--;
 		if (ammo > 0)
 		{
-			CockTrigger(shotTypes[shot % 4], shotTypes[shot % 4].name, 4, 5, 4);
+			CockTrigger(shotTypes[shot % 4], shotTypes[shot % 4].name, 4, 2, 4);
 			ammo--;
 		}
 		else
@@ -186,7 +186,8 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperPistolShot()
 	{
-		CockTrigger(shotTypes[shot % 4], shotTypes[shot % 4].name, 6, 6, 6);
+		if (health > Mathf.Pow(2, 3))
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 3, 6);
 	}
 
 	void SubShot()
@@ -203,8 +204,12 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperSubShot()
 	{
-		CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 2, 6);
-		CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 2, 6);
+		if (health > 9)
+		{
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 1, 6);
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 1, 6);
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 1, 6);
+		}
 	}
 
 	void RifleShot()
@@ -221,7 +226,8 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperRifleShot()
 	{
-		CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 6, 6);
+		if (health > Mathf.Pow(2, 4))
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 5, 3, 10);
 	}
 
 	void ShotgunShot()
@@ -229,7 +235,7 @@ public class CharacterStats : MonoBehaviour
 		movementActions--;
 		if (ammo > 0)
 		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 3, 7, 3);
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 2, 4, 4);
 			ammo--;
 		}
 		else
@@ -238,7 +244,8 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperShotgunShot()
 	{
-		CockTrigger(shotTypes[shot], shotTypes[shot].name, 3, 7, 3);
+		if (health > Mathf.Pow(2, 4))
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 4, 4, 4);
 	}
 
 	void SniperShot()
@@ -246,7 +253,7 @@ public class CharacterStats : MonoBehaviour
 		movementActions--;
 		if (ammo > 0)
 		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 5, 6, 15);
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 5, 3, 15);
 			ammo--;
 		}
 		else
@@ -255,7 +262,8 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperSniperShot()
 	{
-		CockTrigger(shotTypes[shot], shotTypes[shot].name, 15, 6, 15);
+		if (health > Mathf.Pow(2, 5))
+			CockTrigger(shotTypes[shot], shotTypes[shot].name, 15, 4, 15);
 	}
 
 	void Reload(int shotType)
@@ -264,20 +272,20 @@ public class CharacterStats : MonoBehaviour
 		{
 			movementActions--;
 			ammo = 4;
-			shot = shot % 4;
+			shot = Random.Range(0,3);
 		}
 
 		if (loadout.Contains("AR"))
 		{
 			movementActions--;
-			ammo = 10;
+			ammo = 8;
 			shot = shotType;
 		}
 
 		if (loadout.Contains("SMG"))
 		{
 			movementActions--;
-			ammo = 15;
+			ammo = 6;
 			shot = shotType;
 		}
 
@@ -298,31 +306,32 @@ public class CharacterStats : MonoBehaviour
 		actions.Add("Reload");
 	}
 
-	void CockTrigger(GameObject ammo, string attackName, int speed, int power, int range)
+	void CockTrigger(GameObject shotType, string attackName, int speed, int power, int range)
 	{
 		Vector3 adjustedPos = new Vector3(transform.position.x, 
-											transform.position.y + basics.unitHeight / 2, 
+											transform.position.y + basics.unitHeight, 
 											transform.position.z);
 
-		GameObject shot = Instantiate(ammo, adjustedPos, Quaternion.identity);
+		GameObject shot = Instantiate(shotType);
+		shot.transform.position = adjustedPos;
+		shot.transform.localScale = new Vector3(.25f, .25f, .25f);
 		ShotScript ss = shot.GetComponent<ShotScript>();
 
-		if (ammo.name == "Strong")
+		if (shotType.name == "Strong")
 			power += 1;
 
 		ss.speed = speed;
 		ss.power = power;
 		ss.range = range;
 		ss.owner = gameObject;
+		ss.basics.unitHeight = basics.unitHeight;
 
 		basics.map.selectedUnit = shot;
 
 		shot.GetComponent<UnitBasics>().tileX = basics.tileX;
 		shot.GetComponent<UnitBasics>().tileY = basics.tileY;
 		shot.GetComponent<UnitBasics>().tileZ = basics.tileZ;
-		shot.transform.position = basics.map.TileCoordToWorldCoord(basics.tileX, 
-																	basics.tileY, 
-																	basics.tileZ);
+
 		shot.name = attackName;
 		shooting.Add(shot);
 		basics.CheckPath();
@@ -331,7 +340,7 @@ public class CharacterStats : MonoBehaviour
 	void UncockTrigger()
 	{
 		Destroy(shooting[shooting.Count - 1]);
-		shooting.RemoveAt(shooting.Count - 1);
+		basics.map.selectedUnit = gameObject;
 	}
 
 	public void BlockTile(string direction)
@@ -437,6 +446,10 @@ public class CharacterStats : MonoBehaviour
 			{
 				if (loadout.Contains("4shot"))
 					shot--;
+
+				if (shot <= 0)
+					shot = 3;
+
 				ammo++;
 				UncockTrigger();
 			}
@@ -491,10 +504,11 @@ public class CharacterStats : MonoBehaviour
 		if (damageType == DamageTypes.Slashed && disengagement)
 			basics.nextBonus += 3;
 
-		if (!damageTracker.ContainsKey(damageDealer))
-			damageTracker.Add(damageDealer, damage);
-		else
-			damageTracker[damageDealer] += damage;
+		if (damageDealer != null)
+			if (!damageTracker.ContainsKey(damageDealer))
+				damageTracker.Add(damageDealer, damage);
+			else
+				damageTracker[damageDealer] += damage;
 
 		health -= damage;
 		if (health <= 0)

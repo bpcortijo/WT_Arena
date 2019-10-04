@@ -5,10 +5,12 @@ using UnityEngine.SceneManagement;
 
 public class ManagementScript : MonoBehaviour {
 	MapMaker mapCode;
+	public bool playResults;
+	public float resultsTime = 0, resultsTimer = 5f;
 	public GameObject map;
 	bool activeTurn = false;
-	public float turnTimer=999f, turnTime = 90f;
 	public List<GameObject> startingPlayers, players;
+	public float turnTimer = 90f, turnTime = 999f;
 	public int turn = 1, maxTurns = 60, playersLeft = 1, endTurnRequests = 0;
 
 	private void OnEnable()
@@ -25,7 +27,7 @@ public class ManagementScript : MonoBehaviour {
 			mapCode = map.GetComponent<MapMaker>();
 			CreatePlayers();
 
-			turnTimer = turnTime + 30f;
+			turnTime = turnTimer + 30f;
 			activeTurn = true;
 			// Get Light
 		}
@@ -34,51 +36,77 @@ public class ManagementScript : MonoBehaviour {
     void Update()
     {
 		if (activeTurn)
-			turnTimer -= Time.deltaTime;
-		if (endTurnRequests == playersLeft && endTurnRequests != 0 || turnTimer <= 0)
-			NextTurn();
-    }
+			turnTime -= Time.deltaTime;
+		if (endTurnRequests == playersLeft && endTurnRequests != 0 || turnTime <= 0)
+			if (!playResults)
+				TurnResults();
+
+		if (playResults)
+		{
+			resultsTime += Time.deltaTime;
+
+			if (resultsTime >= resultsTimer)
+			{
+				playResults = false;
+				endTurnRequests = 0;
+				resultsTime = 0;
+				NextTurn();
+			}
+		}
+
+		if (playResults)
+		{
+			foreach (CharacterStats ch in mapCode.characterPaths)
+				if (ch.basics.shortPath.Count > 0)
+					ch.basics.Move(resultsTime);
+			foreach (ShotScript atk in mapCode.attackPaths)
+				atk.basics.Move(resultsTime);
+		}
+	}
+
+	void TurnResults()
+	{
+		GetCharacterPaths();
+		mapCode.GetAttackPaths();
+		//GetNetworkMap();
+		foreach (CharacterStats ch in mapCode.characterPaths)
+		{
+			ch.basics.ReMapMovement();
+			ch.basics.SetPosition(resultsTimer);
+		}
+
+		foreach (ShotScript atk in mapCode.attackPaths)
+		{
+			atk.basics.ReMapMovement();
+			atk.basics.SetPosition(resultsTimer);
+		}
+		playResults = true;
+	}
+
+	float CheckForHit(ShotScript atk)
+	{
+		float timeToImpact = resultsTimer;
+
+		foreach (CharacterStats unit in mapCode.characterPaths)
+			if (unit.transform.parent != atk.owner.transform.parent)
+				foreach (MapMaker.Node node in atk.basics.shortPath)
+					if (unit.basics.shortPath.Contains(node))
+					{
+						float newTime = unit.basics.shortPath.IndexOf(node) * unit.basics.lerpTimePerSpace;
+						if (timeToImpact > newTime)
+							timeToImpact = newTime;
+					}
+		return timeToImpact;
+	}
 
 	void NextTurn()
 	{
-		GameObject go = mapCode.selectedUnit;
-		endTurnRequests = 0;
-
-		CharacterStats[] NotMovingCharacters = FindObjectsOfType<CharacterStats>();
-		foreach (CharacterStats characterCode in NotMovingCharacters)
-		{
-			if (characterCode.basics.plannedPath == null)
-			{
-				characterCode.basics.plannedPath = new List<MapMaker.Node>();
-				characterCode.basics.plannedPath.Add(mapCode.graph[characterCode.basics.tileX,
-																	characterCode.basics.tileY,
-																	characterCode.basics.tileZ]);
-			}
-			else if (characterCode.basics.plannedPath.Count == 0)
-				characterCode.basics.plannedPath.Add(mapCode.graph[characterCode.basics.tileX,
-																	characterCode.basics.tileY,
-																	characterCode.basics.tileZ]);
-		}
-
-		mapCode.selectedUnit = go;
-
-		GetCharacterPaths();
-		mapCode.GetAttackPaths();
-		mapCode.CheckAllPaths();
+		Debug.Log("Next");
 
 		// rotate light -.125 degrees on the x axis
 
-		foreach (GameObject p in players)
-		{
-			PlayerScript player = p.GetComponent<PlayerScript>();
-			player.TakeTurn();
-		}
-
-		foreach (GameObject a in GameObject.FindGameObjectsWithTag("Shot"))
-		{
-			a.GetComponent<ShotScript>().set = true;
-			a.GetComponent<ShotScript>().Attack();
-		}
+		foreach (ShotScript atk in mapCode.attackPaths)
+			atk.AfterTurn();
 
 		turn++;
 		StartCoroutine(EndTurn());
@@ -92,7 +120,7 @@ public class ManagementScript : MonoBehaviour {
 				player.TurnOver();
 				player.canEnd = true;
 			}
-			turnTimer = turnTime;
+			turnTime = turnTimer;
 		}
 	}
 
@@ -101,8 +129,10 @@ public class ManagementScript : MonoBehaviour {
 		foreach (GameObject player in startingPlayers)
 		{
 			GameObject p = Instantiate(player);
-			p.transform.parent = this.transform;
+			p.transform.parent = transform;
+			p.GetComponent<PlayerScript>().map = mapCode;
 			players.Add(p);
+			player.SetActive(false);
 		}
 	}
 

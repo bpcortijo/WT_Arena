@@ -3,18 +3,16 @@ using System.Collections.Generic;
 
 public class UnitBasics : MonoBehaviour {
 	public int speed, bonus, nextBonus;
-	public float lerpTimePerspace = 5;
+	public float lerpTimePerSpace = 5;
 
 	public MapMaker map;
 	public float unitHeight = 1f;
-	public bool vector = false, full = false;
 	public int tileX, tileY, tileZ, turns;
+	public bool vector = false, full = false;
 
-	public List<MapMaker.Node> shortPath = null;
-	public List<MapMaker.Node> plannedPath = null;
 	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
-
-	public float lerpSpeed;
+	public List<MapMaker.Node> shortPath = new List<MapMaker.Node>();
+	public List<MapMaker.Node> plannedPath = new List<MapMaker.Node>();
 
 	public void CheckPath()
 	{
@@ -58,12 +56,12 @@ public class UnitBasics : MonoBehaviour {
 			}
 		}
 		else
-			shortPath = null;
+			shortPath = new List<MapMaker.Node>();
 	}
 
 	private void Update()
     {
-		if (plannedPath != null && tag == "Shot")
+		if (tag == "Shot")
 		{
 			// Drawing the lines to show the path the bullet will take after this turn (PLACEHOLDER)
 			for (int currentStep = 0; currentStep < plannedPath.Count - 1; currentStep++)
@@ -80,42 +78,37 @@ public class UnitBasics : MonoBehaviour {
 			}
 		}
 
-		if (shortPath != null)
+		// Drawing the lines to show the path the character or bullet will take this turn (PLACEHOLDER)
+		for (int currentStep = 0; currentStep < shortPath.Count - 1; currentStep++)
 		{
-			// Drawing the lines to show the path the character or bullet will take this turn (PLACEHOLDER)
-			for (int currentStep = 0; currentStep < shortPath.Count - 1; currentStep++)
-			{
-				Vector3 start = map.TileCoordToWorldCoord(shortPath[currentStep].x,
-															shortPath[currentStep].y,
-															shortPath[currentStep].z);
-				Vector3 end = map.TileCoordToWorldCoord(shortPath[currentStep + 1].x,
-															shortPath[currentStep + 1].y,
-															shortPath[currentStep + 1].z);
+			Vector3 start = map.TileCoordToWorldCoord(shortPath[currentStep].x,
+														shortPath[currentStep].y,
+														shortPath[currentStep].z);
+			Vector3 end = map.TileCoordToWorldCoord(shortPath[currentStep + 1].x,
+														shortPath[currentStep + 1].y,
+														shortPath[currentStep + 1].z);
+
 				start.y += unitHeight;
 				end.y += unitHeight;
 
-				if (tag == "Shot")
-				{
-					Debug.DrawLine(start, end, Color.red);
-				}
-				else
-					Debug.DrawLine(start, end, Color.blue);
-			}
+			if (tag == "Shot")
+				Debug.DrawLine(start, end, Color.red);
+			else
+				Debug.DrawLine(start, end, Color.blue);
 		}
     }
 
 	public void ReMapMovement()
 	{
 		foreach (MapMaker.Node node in shortPath)
-			CheckPlayerMovementTile(node);
+			CheckEachMovementTile(node);
 	}
 
-	void CheckPlayerMovementTile(MapMaker.Node node)
+	void CheckEachMovementTile(MapMaker.Node node)
 	{
 		TileScript standingTile = map.GetTileFromNode(node);
-		if (GetComponent<CharacterStats>() != null)
-		{
-			if (standingTile.effect != null)
+
+			if (standingTile.effect != null && GetComponent<CharacterStats>() != null)
 			{
 				switch (standingTile.effect)
 				{
@@ -132,40 +125,55 @@ public class UnitBasics : MonoBehaviour {
 				}
 			}
 
-			/*foreach (ShotScript atk in map.attackPaths)
-				foreach (MapMaker.Node atkStep in atk.basics.shortPath)
-					if (node==atkStep)
-						//Play shot animation
-						*/
-
 			if (shortPath.IndexOf(node) < shortPath.Count - 1)
 			{
 				MapMaker.Node nextNode = shortPath[shortPath.IndexOf(node)+1];
 				if (!map.CanEnter(node.x, node.y, node.z, nextNode.x, nextNode.y, nextNode.z))
-					while (shortPath.Count + 1 > shortPath.IndexOf(node))
-						shortPath.Remove(shortPath[shortPath.Count - 1]);
+					if (GetComponent<CharacterStats>() != null)
+						while (shortPath.Count + 1 > shortPath.IndexOf(node))
+							shortPath.Remove(shortPath[shortPath.Count - 1]);
+					//else
+					//{
+					//	GetComponent<ShotScript>().movingPower--;
+					//	if (GetComponent<ShotScript>().movingPower<=0)
+					//		while (shortPath.Count + 1 > shortPath.IndexOf(node))
+					//			shortPath.Remove(shortPath[shortPath.Count - 1]);
+					//}
 			}
+	}
+
+	public void SetPosition(float timeToFinalPos)
+	{
+		if (shortPath.Count > 0)
+		{
+			tileX = shortPath[shortPath.Count - 1].x;
+			tileY = shortPath[shortPath.Count - 1].y;
+			tileZ = shortPath[shortPath.Count - 1].z;
+			lerpTimePerSpace = timeToFinalPos / shortPath.Count;
 		}
 	}
 
-	public void Move()
+	public void Move(float timePast)
 	{
-		int s = 1;  // Spaces
-		if (shortPath != null)	// Check if character is movin
-			if (shortPath.Count > 1)
-			{
-				tileX = shortPath[shortPath.Count - 1].x;
-				tileY = shortPath[shortPath.Count - 1].y;
-				tileZ = shortPath[shortPath.Count - 1].z;
+		int space = Mathf.CeilToInt(timePast / lerpTimePerSpace);
+		if (space < shortPath.Count)
+		{
+			Vector3 nextSpace = map.TileCoordToWorldCoord(shortPath[space].x, shortPath[space].y, shortPath[space].z);
+			if (GetComponent<ShotScript>() != null)
+				nextSpace.y += unitHeight;
 
-				while (s < speed && s<shortPath.Count)
-				{
-					transform.position = map.TileCoordToWorldCoord(shortPath[s].x,
-																	shortPath[s].y,
-																	shortPath[s].z);
-					s++;
-				}
-			}
+			transform.position = Vector3.Lerp(transform.position, nextSpace, (timePast - space + 1) / lerpTimePerSpace);
+		}
+	}
+
+	public void ClearLastShotMove()
+	{
+		turns--;
+		if (turns <= 0)
+			Destroy(gameObject);
+
+		while (0 < plannedPath.IndexOf(map.graph[tileX, tileY, tileZ]))
+			plannedPath.RemoveAt(0);
 	}
 
 	public bool CheckSlope(float x, float y, float z) // Check if the shot is going straight in any direction

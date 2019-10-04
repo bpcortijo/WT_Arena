@@ -7,6 +7,7 @@ public class PlayerScript : MonoBehaviour
 {
 	public bool canEnd;
 	ManagementScript gm;
+	public MapMaker map;
 	public List<GameObject> units, characters;
 
 	private void Start()
@@ -57,31 +58,35 @@ public class PlayerScript : MonoBehaviour
 				characters.Remove(characters[0]);
 
 	}
+
 	public void PlayerEndTurn()
 	{
+		Debug.Log("pEnd");
+		GameObject go = map.selectedUnit;
+		foreach (GameObject unit in units)
+		{
+			UnitBasics basics = unit.GetComponent<UnitBasics>();
+			if (basics.shortPath == null)
+				map.AddToPath(basics, basics.tileX, basics.tileY, basics.tileZ);
+		}
+
+		map.selectedUnit = go;
+
 		if (gm != null)
 			gm.endTurnRequests++;
 	}
 
-	public void Replace()
-	{
 
-	}
-
-	public void TakeTurn()
+	public void TurnOver()
 	{
 		if (gm != null)
 			canEnd = true;
 		foreach (GameObject unit in units)
-			unit.GetComponent<CharacterStats>().TakeActions();
-	}
-
-	public void TurnOver()
-	{
-		foreach (GameObject unit in units)
-			while (unit.GetComponent<CharacterStats>().defendingTiles.Count>0)
+		{
+			unit.GetComponent<CharacterStats>().AfterTurnReset();
+			while (unit.GetComponent<CharacterStats>().defendingTiles.Count > 0)
 				unit.GetComponent<CharacterStats>().StopBlocking();
-
+		}
 	}
 
 	bool CheckFour()
