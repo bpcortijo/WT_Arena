@@ -64,12 +64,7 @@ public class MenuScript : MonoBehaviour
 
 	public void Play()
 	{
-		List<GameObject> dontDestroy= new List<GameObject>();
-		dontDestroy.Add(GameObject.Find("GameManager"));
-		dontDestroy.Add(GameObject.Find("Player1"));
-		dontDestroy.Add(GameObject.Find("Player2"));
-		foreach (GameObject go in dontDestroy)
-			DontDestroyOnLoad(go);
+		DontDestroyOnLoad(GameObject.Find("GameManager"));
 		SceneManager.LoadScene("Game");
 	}
 }

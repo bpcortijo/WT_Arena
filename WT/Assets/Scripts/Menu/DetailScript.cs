@@ -7,10 +7,10 @@ public class DetailScript : MonoBehaviour
 {
 	public Color empty, full;
 
+	bool playerHas = false;
 	public TeamSelect teamPage;
-	public PlayerScript P1, P2;
-	bool P1has = false, P2has = false;
-	public Text selectTeam1, selectTeam2, cName, cAge;
+	public PreGamePlayerScript localTemp;
+	public Text selectLocalTeam, cName, cAge;
 
 	[HideInInspector]
 	public GameObject currentCharacter;
@@ -51,60 +51,39 @@ public class DetailScript : MonoBehaviour
 
 	void EditDetails()
 	{
-		if (P1.characters.Contains(currentCharacter))
+		if (localTemp.characters.Contains(currentCharacter))
 		{
-			P1has = true;
-			selectTeam1.text = "Remove from Team 1";
+			playerHas = true;
+			selectLocalTeam.text = "Remove from Team 1";
 		}
 		else
 		{
-			P1has = false;
-			selectTeam1.text = "Add to Team 1";
+			playerHas = false;
+			selectLocalTeam.text = "Add to Team 1";
 		}
 
-		if (P2.characters.Contains(currentCharacter))
+		/*if (P2.characters.Contains(currentCharacter))
 		{
 			P2has = true;
-			selectTeam2.text = "Remove from Team 2";
+			select.text = "Remove from Team 2";
 		}
 		else
 		{
 			P2has = false;
-			selectTeam2.text = "Add to Team 2";
-		}
-
-		/*		if (P2.characters.Contains(currentCharacter))
-				{
-					P2has = true;
-					select.text = "Remove from Team 2";
-				}
-				else
-				{
-					P2has = false;
-					select.text = "Add to Team 2";
-				}*/
+			select.text = "Add to Team 2";
+		}*/
 
 		cName.text = "Name: " + currentCharacter.name;
 		cAge.text = "Age: " + currentCharacter.GetComponent<CharacterStats>().age;
 	}
 
-	public void EditTeam1()
+	public void EditLocalTeam()
 	{
-		if (P1has)
-			P1.characters.Remove(currentCharacter);
+		if (playerHas)
+			localTemp.characters.Remove(currentCharacter);
 		else
-			P1.characters.Add(currentCharacter);
-		teamPage.UpdateTeam1();
-		EditDetails();
-	}
-
-	public void EditTeam2()
-	{
-		if (P2has)
-			P2.characters.Remove(currentCharacter);
-		else
-			P2.characters.Add(currentCharacter);
-		teamPage.UpdateTeam2();
+			localTemp.characters.Add(currentCharacter);
+		teamPage.UpdateLocalTeam();
 		EditDetails();
 	}
 }

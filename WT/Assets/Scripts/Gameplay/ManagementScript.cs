@@ -5,13 +5,19 @@ using UnityEngine.SceneManagement;
 
 public class ManagementScript : MonoBehaviour {
 	MapMaker mapCode;
-	public bool playResults;
-	public float resultsTime = 0, resultsTimer = 5f;
 	public GameObject map;
+
+	public GameObject playerPrefab;
+	public PreGamePlayerScript localTemp;
+
+	public List<GameObject> players;
+	public List<string> startingPlayers;
+
 	bool activeTurn = false;
-	public List<GameObject> startingPlayers, players;
+	public bool playResults;
 	public float turnTimer = 90f, turnTime = 999f;
-	public int turn = 1, maxTurns = 60, playersLeft = 1, endTurnRequests = 0;
+	public float resultsTime = 0, resultsTimer = 5f;
+	public int turn = 1, maxTurns = 60, endTurnRequests = 0;
 
 	private void OnEnable()
 	{
@@ -22,10 +28,10 @@ public class ManagementScript : MonoBehaviour {
 	{
 		if (scene.name == "Game")
 		{
-			playersLeft = startingPlayers.Count;
 			map = Instantiate(map);
 			mapCode = map.GetComponent<MapMaker>();
-			CreatePlayers();
+			mapCode.gm = this;
+			CreatePlayer();
 
 			turnTime = turnTimer + 30f;
 			activeTurn = true;
@@ -37,7 +43,7 @@ public class ManagementScript : MonoBehaviour {
     {
 		if (activeTurn)
 			turnTime -= Time.deltaTime;
-		if (endTurnRequests == playersLeft && endTurnRequests != 0 || turnTime <= 0)
+		if (endTurnRequests == players.Count && endTurnRequests != 0 || turnTime <= 0)
 			if (!playResults)
 				TurnResults();
 
@@ -80,6 +86,14 @@ public class ManagementScript : MonoBehaviour {
 			atk.basics.ReMapMovement();
 			atk.basics.SetPosition(resultsTimer);
 		}
+
+		foreach (CharacterStats ch in mapCode.characterPaths)
+		{
+			foreach (CharacterStats enemy in mapCode.characterPaths)
+				if (ch.meleeThis == mapCode.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ])
+						ch.MeleeHit(enemy);
+		}
+
 		playResults = true;
 	}
 
@@ -110,7 +124,7 @@ public class ManagementScript : MonoBehaviour {
 
 		turn++;
 		StartCoroutine(EndTurn());
-		if (turn >= maxTurns || playersLeft <= 1)
+		if (turn >= maxTurns /*|| players.Count <= 1*/)
 			EndGame();
 		else
 		{
@@ -124,16 +138,15 @@ public class ManagementScript : MonoBehaviour {
 		}
 	}
 
-	void CreatePlayers()
+	void CreatePlayer()
 	{
-		foreach (GameObject player in startingPlayers)
-		{
-			GameObject p = Instantiate(player);
-			p.transform.parent = transform;
-			p.GetComponent<PlayerScript>().map = mapCode;
-			players.Add(p);
-			player.SetActive(false);
-		}
+		GameObject p = Instantiate(playerPrefab);
+		p.transform.parent = transform;
+		PlayerScript pScript = p.GetComponent<PlayerScript>();
+		pScript.map = mapCode;
+		pScript.characters = localTemp.characters;
+		startingPlayers.Add(localTemp.localPlayerName);
+		players.Add(p);
 	}
 
 	void GetCharacterPaths()
@@ -151,6 +164,8 @@ public class ManagementScript : MonoBehaviour {
 
 	IEnumerator EndTurn()
 	{
+		mapCode.characterPaths.Clear();
+		mapCode.attackPaths.Clear();
 		yield return new WaitForSeconds(1);
 	}
 }

@@ -10,14 +10,12 @@ public class CharacterStats : MonoBehaviour
 	public int speed, health, shot, ammo, defence = 2;
 
 	//Perks
-	public bool quickstep = false, sprinter = false, disengagement = false;
+	public bool quickstep = false, sprinter = false, disengagement = false, trust = false, fours = false;
 
 	[HideInInspector]
 	public int movementActions = 2;
 	[HideInInspector]
 	public UnitBasics basics;
-	[HideInInspector]
-	public bool fours = false;
 //	[HideInInspector]
 	public List<string> actions = new List<string>();
 
@@ -27,6 +25,7 @@ public class CharacterStats : MonoBehaviour
 	public bool attacking = false, reloading = false, defending = false, severed=false;
 	public int disabled = 0;
 
+	public MapMaker.Node meleeThis;
 	List<GameObject> shooting = new List<GameObject>();
 	List<string> defendingDirections = new List<string>();
 	public List<TileScript> defendingTiles = new List<TileScript>();
@@ -125,6 +124,9 @@ public class CharacterStats : MonoBehaviour
 					else
 						reloading = true;
 				}
+				if (Input.GetKeyUp(KeyCode.A))
+					if (!attacking)
+						attacking = true;
 			}
 
 			if (Input.GetKeyUp(KeyCode.D))
@@ -132,6 +134,9 @@ public class CharacterStats : MonoBehaviour
 					defending = false;
 				else
 					defending = true;
+
+			if (attacking)
+				attacking = false;
 
 			if (defending && defendingTiles.Count >= defence)
 			{
@@ -167,6 +172,20 @@ public class CharacterStats : MonoBehaviour
 	void Undo()
 	{
 		basics.CheckPath();
+	}
+
+	void MeleeAttack(MapMaker.Node node)
+	{
+		// if end of movement melee +2 power
+		int startDist = basics.map.Distance(basics.map.graph[basics.tileX, basics.tileY, basics.tileZ], node);
+		// int endDist = basics.map.Distance(basics.shortPath[basics.shortPath.Count-1], node);
+
+		if (startDist == 1)
+		{
+			actions.Add("meleeFirst");
+			meleeThis = node;
+			attacking = false;
+		}
 	}
 
 	void PistolShot()
@@ -430,6 +449,9 @@ public class CharacterStats : MonoBehaviour
 			if (act == "Move")
 				MoveClear();
 
+			else if (act == "meleeFirst")
+				meleeThis = null;
+
 			else if (act == "Block")
 				StopBlocking();
 
@@ -459,24 +481,32 @@ public class CharacterStats : MonoBehaviour
 
 	public void MoveClear()
 	{
-		int n = basics.plannedPath.Count - 1;
+		int n = basics.shortPath.Count - 1;
 
 		if (basics.keyPoints.Count > 2)
 		{
-			while (basics.plannedPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
+			while (basics.shortPath[n] != basics.keyPoints[basics.keyPoints.Count - 2])
 			{
-				basics.plannedPath.Remove(basics.plannedPath[n]);
+				basics.shortPath.Remove(basics.plannedPath[n]);
 				n--;
 			}
 			basics.keyPoints.Remove(basics.keyPoints[basics.keyPoints.Count - 1]);
 		}
+
 		else
 		{
-			basics.plannedPath = null;
+			basics.plannedPath.Clear();
 			basics.keyPoints.Clear();
 		}
 
 		basics.CheckPath();
+	}
+
+	public void MeleeHit(CharacterStats target)
+	{
+		Debug.Log(name + " punched " + target.name + " in the face");
+		//determine melee weapon
+		//target.DamageCharacter(0, DamageTypes.Slashed, 0, this);
 	}
 
 	public void DamageCharacter(int damage, DamageTypes damageType, int crit, CharacterStats damageDealer)

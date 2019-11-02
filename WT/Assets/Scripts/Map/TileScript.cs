@@ -7,6 +7,7 @@ public class TileScript : MonoBehaviour {
 	public string effect = null;
 	public int tileX, tileY, tileZ;
 	public bool floor, ceiling, northViable, westViable, eastViable, southViable;
+	public bool hasUnit = false;
 	public int defendFloor, defendCeiling, defendNorth, defendWest, defendEast, defendSouth;
 	public GameObject shieldPrefab;
 
