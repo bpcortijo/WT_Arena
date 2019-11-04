@@ -1,15 +1,18 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 using UnityEngine.EventSystems;
 
-public class TileScript : MonoBehaviour {
+public class TileScript : NetworkBehaviour {
     public MapMaker map;
 	public string effect = null;
 	public int tileX, tileY, tileZ;
+	public GameObject shieldPrefab;
 	public bool floor, ceiling, northViable, westViable, eastViable, southViable;
+
+	[SyncVar]
 	public bool hasUnit = false;
 	public int defendFloor, defendCeiling, defendNorth, defendWest, defendEast, defendSouth;
-	public GameObject shieldPrefab;
 
 	[HideInInspector]
 	public TileType tt;
@@ -19,7 +22,7 @@ public class TileScript : MonoBehaviour {
 
 	void Start()
 	{
-		DefenceReset();
+		CmdDefenceReset();
 		gameObject.transform.localPosition = new Vector3(gameObject.transform.localPosition.x,
 									gameObject.transform.localPosition.y + .9f,
 									gameObject.transform.localPosition.z);
@@ -41,6 +44,7 @@ public class TileScript : MonoBehaviour {
 			gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
 																	gameObject.transform.localRotation.y - 90,
 																	gameObject.transform.localRotation.z);
+		NetworkServer.Spawn(gameObject);
 	}
 
 
@@ -65,7 +69,8 @@ public class TileScript : MonoBehaviour {
 			}
 	}
 
-	public void DefenceReset()
+	[Command]
+	public void CmdDefenceReset()
 	{
 		defendFloor = 0;
 		defendCeiling = 0;
@@ -73,7 +78,6 @@ public class TileScript : MonoBehaviour {
 		defendWest = 0;
 		defendEast = 0;
 		defendSouth = 0;
-
 	}
 
 	public void CreateVisualShields (string dir)
@@ -122,16 +126,15 @@ public class TileScript : MonoBehaviour {
 		}
 	}
 
-	public void RemoveShield(bool broken, string dir)
+	public void RemoveShield(string dir)
 	{
-		// if (!broken)
-		// play shield down animation
+		//play shield off animation
 		Destroy(transform.Find(dir + " shield").gameObject);
 	}
 
 	public void BreakShield(string dir)
 	{
 		//play breakshield animation
-		RemoveShield(false, dir);
+		Destroy(transform.Find(dir + " shield").gameObject);
 	}
 }
