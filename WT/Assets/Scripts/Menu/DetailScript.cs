@@ -51,7 +51,7 @@ public class DetailScript : MonoBehaviour
 
 	void EditDetails()
 	{
-		if (localTemp.characters.Contains(currentCharacter))
+		if (localTemp.myTeam.Contains(currentCharacter))
 		{
 			playerHas = true;
 			selectLocalTeam.text = "Remove from Team 1";
@@ -80,9 +80,9 @@ public class DetailScript : MonoBehaviour
 	public void EditLocalTeam()
 	{
 		if (playerHas)
-			localTemp.characters.Remove(currentCharacter);
+			localTemp.myTeam.Remove(currentCharacter);
 		else
-			localTemp.characters.Add(currentCharacter);
+			localTemp.myTeam.Add(currentCharacter);
 		teamPage.UpdateLocalTeam();
 		EditDetails();
 	}

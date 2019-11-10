@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-public class ManagementScript : MonoBehaviour {
+public class ManagementScript : NetworkBehaviour {
 	MapMaker mapCode;
 	public GameObject map;
 
@@ -13,11 +14,17 @@ public class ManagementScript : MonoBehaviour {
 	public List<GameObject> players;
 	public List<string> startingPlayers;
 
-	bool activeTurn = false;
-	public bool playResults;
+	bool inGame = false;
+	public bool playResults = false;
 	public float turnTimer = 90f, turnTime = 999f;
 	public float resultsTime = 0, resultsTimer = 5f;
+	[SyncVar]
 	public int turn = 1, maxTurns = 60, endTurnRequests = 0;
+
+	public void GameStart()
+	{
+		NetworkManager.singleton.ServerChangeScene("Game");
+	}
 
 	private void OnEnable()
 	{
@@ -28,24 +35,27 @@ public class ManagementScript : MonoBehaviour {
 	{
 		if (scene.name == "Game")
 		{
-			map = Instantiate(map);
-			mapCode = map.GetComponent<MapMaker>();
-			mapCode.gm = this;
-			CreatePlayer();
+			if (NetworkServer.active)
+			{
+				map = Instantiate(map);
+				mapCode = map.GetComponent<MapMaker>();
+				mapCode.gm = this;
 
-			turnTime = turnTimer + 30f;
-			activeTurn = true;
-			// Get Light
+				NetworkServer.Spawn(map);
+
+				CreatePlayer();
+
+				turnTime = turnTimer + 30f;
+				inGame = true;
+				// Get Light
+			}
 		}
 	}
 
-    void Update()
+	void Update()
     {
-		if (activeTurn)
+		if (inGame && !playResults)
 			turnTime -= Time.deltaTime;
-		if (endTurnRequests == players.Count && endTurnRequests != 0 || turnTime <= 0)
-			if (!playResults)
-				TurnResults();
 
 		if (playResults)
 		{
@@ -60,6 +70,11 @@ public class ManagementScript : MonoBehaviour {
 			}
 		}
 
+		if (endTurnRequests == players.Count && endTurnRequests != 0 || turnTime <= 0)
+			if (!playResults)
+				TurnResults();
+			
+
 		if (playResults)
 		{
 			foreach (CharacterStats ch in mapCode.characterPaths)
@@ -73,27 +88,28 @@ public class ManagementScript : MonoBehaviour {
 	void TurnResults()
 	{
 		GetCharacterPaths();
-		mapCode.GetAttackPaths();
-		//GetNetworkMap();
-		foreach (CharacterStats ch in mapCode.characterPaths)
-		{
-			ch.basics.ReMapMovement();
-			ch.basics.SetPosition(resultsTimer);
-		}
+		//mapCode.GetAttackPaths();
+		//foreach (CharacterStats ch in mapCode.characterPaths)
+		//{
+		//	ch.basics.ReMapMovement();
+		//	ch.basics.SetPosition(resultsTimer);
+		//	ch.basics.DrawLines();
+		//}
 
-		foreach (ShotScript atk in mapCode.attackPaths)
-		{
-			atk.basics.ReMapMovement();
-			atk.basics.SetPosition(resultsTimer);
-		}
+		//foreach (ShotScript atk in mapCode.attackPaths)
+		//{
+		//	atk.basics.ReMapMovement();
+		//	atk.basics.SetPosition(resultsTimer);
+		//	atk.basics.DrawLines();
+		//}
 
-		foreach (CharacterStats ch in mapCode.characterPaths)
-		{
-			foreach (CharacterStats enemy in mapCode.characterPaths)
-				if (ch.meleeThis == mapCode.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ])
-						ch.MeleeHit(enemy);
-		}
-
+		//foreach (CharacterStats ch in mapCode.characterPaths)
+		//{
+		//	foreach (CharacterStats enemy in mapCode.characterPaths)
+		//		if (ch.meleeThis == mapCode.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ])
+		//				ch.MeleeHit(enemy);
+		//}
+		Debug.Break();
 		playResults = true;
 	}
 
@@ -144,7 +160,8 @@ public class ManagementScript : MonoBehaviour {
 		p.transform.parent = transform;
 		PlayerScript pScript = p.GetComponent<PlayerScript>();
 		pScript.map = mapCode;
-		pScript.characters = localTemp.characters;
+		pScript.characters = localTemp.myTeam;
+		pScript.pName = localTemp.localPlayerName;
 		startingPlayers.Add(localTemp.localPlayerName);
 		players.Add(p);
 	}

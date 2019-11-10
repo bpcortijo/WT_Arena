@@ -30,189 +30,191 @@ public class DefenceUI : MonoBehaviour
 		east.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
 
 		background.GetComponent<RectTransform>().anchoredPosition = backgroundOff;
-		mapCode = FindObjectOfType<MapMaker>().GetComponent<MapMaker>();
 	}
 
 	void Update()
 	{
-		if (mapCode.selectedUnit == null)
+		if (mapCode != null)
 		{
-			background.GetComponent<RectTransform>().anchoredPosition =
-				Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
-			on = false;
-		}
-
-		else if (mapCode.selectedUnit.GetComponent<CharacterStats>() == null)
-		{
-			background.GetComponent<RectTransform>().anchoredPosition =
-				Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
-			on = false;
-		}
-
-		else if (!mapCode.selectedUnit.GetComponent<CharacterStats>().defending)
-		{
-			background.GetComponent<RectTransform>().anchoredPosition =
-				Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
-			on = false;
-		}
-
-		else if (mapCode.selectedUnit.GetComponent<CharacterStats>().selectedTile == null)
-		{
-			background.GetComponent<RectTransform>().anchoredPosition =
-				Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
-			on = false;
-		}
-
-		else
-		{
-			background.GetComponent<RectTransform>().anchoredPosition =
-				  Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOn, Time.deltaTime * uiSpeed);
-			on = true;
-		}
-
-		if (rotating)
-			if (on)
+			if (mapCode.selectedUnit == null)
 			{
-				switch (northPos)
-				{
-					case 1:
-						north.transform.parent = backRight.transform;
-						east.transform.parent = frontRight.transform;
-						south.transform.parent = frontLeft.transform;
-						west.transform.parent = backLeft.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
-						east.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						south.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						west.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
-						rotateTime -= Time.deltaTime;
-						break;
-					case 2:
-						north.transform.parent = frontRight.transform;
-						east.transform.parent = frontLeft.transform;
-						south.transform.parent = backLeft.transform;
-						west.transform.parent = backRight.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						east.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						south.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
-						west.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
-						rotateTime -= Time.deltaTime;
-						break;
-					case 3:
-						north.transform.parent = frontLeft.transform;
-						east.transform.parent = backLeft.transform;
-						south.transform.parent = backRight.transform;
-						west.transform.parent = frontRight.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						east.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
-						south.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
-						west.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						rotateTime -= Time.deltaTime;
-						break;
-					case 4:
-						north.transform.parent = backLeft.transform;
-						east.transform.parent = backRight.transform;
-						south.transform.parent = frontRight.transform;
-						west.transform.parent = frontLeft.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
-						east.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
-						south.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						west.GetComponent<RectTransform>().anchoredPosition =
-							Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
-						rotateTime -= Time.deltaTime;
-						break;
-					case 5:
-						northPos = 1;
-						break;
-					case 0:
-						northPos = 4;
-						break;
-					default:
-						break;
-				}
-				if (rotateTime <= 0)
-				{
-					rotating = false;
-					rotateTime = 3f;
-				}
+				background.GetComponent<RectTransform>().anchoredPosition =
+					Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
+				on = false;
 			}
+
+			else if (mapCode.selectedUnit.GetComponent<CharacterStats>() == null)
+			{
+				background.GetComponent<RectTransform>().anchoredPosition =
+					Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
+				on = false;
+			}
+
+			else if (!mapCode.selectedUnit.GetComponent<CharacterStats>().defending)
+			{
+				background.GetComponent<RectTransform>().anchoredPosition =
+					Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
+				on = false;
+			}
+
+			else if (mapCode.selectedUnit.GetComponent<CharacterStats>().selectedTile == null)
+			{
+				background.GetComponent<RectTransform>().anchoredPosition =
+					Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOff, Time.deltaTime * uiSpeed);
+				on = false;
+			}
+
 			else
 			{
-				switch (northPos)
-				{
-					case 1:
-						north.transform.parent = backRight.transform;
-						east.transform.parent = frontRight.transform;
-						south.transform.parent = frontLeft.transform;
-						west.transform.parent = backLeft.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition = brPos;
-						east.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						south.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						west.GetComponent<RectTransform>().anchoredPosition = blPos;
-						break;
-					case 2:
-						north.transform.parent = frontRight.transform;
-						east.transform.parent = frontLeft.transform;
-						south.transform.parent = backLeft.transform;
-						west.transform.parent = backRight.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						east.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						south.GetComponent<RectTransform>().anchoredPosition = blPos;
-						west.GetComponent<RectTransform>().anchoredPosition = brPos;
-						break;
-					case 3:
-						north.transform.parent = frontLeft.transform;
-						east.transform.parent = backLeft.transform;
-						south.transform.parent = backRight.transform;
-						west.transform.parent = frontRight.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						east.GetComponent<RectTransform>().anchoredPosition = blPos;
-						south.GetComponent<RectTransform>().anchoredPosition = brPos;
-						west.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						break;
-					case 4:
-						north.transform.parent = backLeft.transform;
-						east.transform.parent = backRight.transform;
-						south.transform.parent = frontRight.transform;
-						west.transform.parent = frontLeft.transform;
-
-						north.GetComponent<RectTransform>().anchoredPosition = blPos;
-						east.GetComponent<RectTransform>().anchoredPosition = brPos;
-						south.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						west.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
-						break;
-					case 5:
-						northPos = 1;
-						break;
-					case 0:
-						northPos = 4;
-						break;
-					default:
-						break;
-				}
-				rotating = false;
+				background.GetComponent<RectTransform>().anchoredPosition =
+					  Vector3.Lerp(background.GetComponent<RectTransform>().anchoredPosition, backgroundOn, Time.deltaTime * uiSpeed);
+				on = true;
 			}
+
+			if (rotating)
+				if (on)
+				{
+					switch (northPos)
+					{
+						case 1:
+							north.transform.parent = backRight.transform;
+							east.transform.parent = frontRight.transform;
+							south.transform.parent = frontLeft.transform;
+							west.transform.parent = backLeft.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
+							east.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							south.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							west.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
+							rotateTime -= Time.deltaTime;
+							break;
+						case 2:
+							north.transform.parent = frontRight.transform;
+							east.transform.parent = frontLeft.transform;
+							south.transform.parent = backLeft.transform;
+							west.transform.parent = backRight.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							east.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							south.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
+							west.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
+							rotateTime -= Time.deltaTime;
+							break;
+						case 3:
+							north.transform.parent = frontLeft.transform;
+							east.transform.parent = backLeft.transform;
+							south.transform.parent = backRight.transform;
+							west.transform.parent = frontRight.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							east.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
+							south.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
+							west.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							rotateTime -= Time.deltaTime;
+							break;
+						case 4:
+							north.transform.parent = backLeft.transform;
+							east.transform.parent = backRight.transform;
+							south.transform.parent = frontRight.transform;
+							west.transform.parent = frontLeft.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(north.GetComponent<RectTransform>().anchoredPosition, blPos, Time.deltaTime * letterSpeed);
+							east.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(east.GetComponent<RectTransform>().anchoredPosition, brPos, Time.deltaTime * letterSpeed);
+							south.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(south.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							west.GetComponent<RectTransform>().anchoredPosition =
+								Vector3.Lerp(west.GetComponent<RectTransform>().anchoredPosition, Vector3.zero, Time.deltaTime * letterSpeed);
+							rotateTime -= Time.deltaTime;
+							break;
+						case 5:
+							northPos = 1;
+							break;
+						case 0:
+							northPos = 4;
+							break;
+						default:
+							break;
+					}
+					if (rotateTime <= 0)
+					{
+						rotating = false;
+						rotateTime = 3f;
+					}
+				}
+				else
+				{
+					switch (northPos)
+					{
+						case 1:
+							north.transform.parent = backRight.transform;
+							east.transform.parent = frontRight.transform;
+							south.transform.parent = frontLeft.transform;
+							west.transform.parent = backLeft.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition = brPos;
+							east.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							south.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							west.GetComponent<RectTransform>().anchoredPosition = blPos;
+							break;
+						case 2:
+							north.transform.parent = frontRight.transform;
+							east.transform.parent = frontLeft.transform;
+							south.transform.parent = backLeft.transform;
+							west.transform.parent = backRight.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							east.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							south.GetComponent<RectTransform>().anchoredPosition = blPos;
+							west.GetComponent<RectTransform>().anchoredPosition = brPos;
+							break;
+						case 3:
+							north.transform.parent = frontLeft.transform;
+							east.transform.parent = backLeft.transform;
+							south.transform.parent = backRight.transform;
+							west.transform.parent = frontRight.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							east.GetComponent<RectTransform>().anchoredPosition = blPos;
+							south.GetComponent<RectTransform>().anchoredPosition = brPos;
+							west.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							break;
+						case 4:
+							north.transform.parent = backLeft.transform;
+							east.transform.parent = backRight.transform;
+							south.transform.parent = frontRight.transform;
+							west.transform.parent = frontLeft.transform;
+
+							north.GetComponent<RectTransform>().anchoredPosition = blPos;
+							east.GetComponent<RectTransform>().anchoredPosition = brPos;
+							south.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							west.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+							break;
+						case 5:
+							northPos = 1;
+							break;
+						case 0:
+							northPos = 4;
+							break;
+						default:
+							break;
+					}
+					rotating = false;
+				}
+		}
     }
 
 	public void PressBackRight()

@@ -1,17 +1,21 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-public class PlayerScript : MonoBehaviour
+public class PlayerScript : NetworkBehaviour
 {
 	public bool canEnd;
+	public string pName;
 	ManagementScript gm;
 	public MapMaker map;
 	public List<GameObject> units, characters;
+	public bool s;
 
 	private void Start()
 	{
+		name = pName;
 		if (SceneManager.GetActiveScene().name=="Game")
 		{
 			gm = transform.parent.gameObject.GetComponent<ManagementScript>();
@@ -71,11 +75,8 @@ public class PlayerScript : MonoBehaviour
 		}
 
 		map.selectedUnit = go;
-
-		if (gm != null)
-			gm.endTurnRequests++;
+		gm.endTurnRequests++;
 	}
-
 
 	public void TurnOver()
 	{

@@ -5,16 +5,14 @@ using UnityEngine;
 public class CameraScript : MonoBehaviour
 {
 	bool turning;
-	public MapMaker mapCode;
 	int cameraLocation = 1, speed = 2;
 	public Vector3 sePos, swPos, nwPos, nePos;
 	public Quaternion seRot, swRot, nwRot, neRot;
 
-	void Start()
+	public void CameraSpawn(string mapName)
     {
 		//Put camera at south-east position and rotation
-		mapCode = FindObjectOfType<MapMaker>();
-		switch (mapCode.mapName)
+		switch (mapName)
 		{
 			default:
 				sePos = new Vector3(-1.5f, 4, -1.5f);

@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 
-public class UnitBasics : MonoBehaviour {
+public class UnitBasics : NetworkBehaviour {
 	GameObject visibleShortPath, visiblePlannedPath;
 	public int speed, bonus, nextBonus;
 	public float lerpTimePerSpace = 5;
@@ -14,7 +15,9 @@ public class UnitBasics : MonoBehaviour {
 
 	MapMaker.Node currentSpace = null;
 	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
+	[SyncVar]
 	public List<MapMaker.Node> shortPath = new List<MapMaker.Node>();
+	[SyncVar]
 	public List<MapMaker.Node> plannedPath = new List<MapMaker.Node>();
 
 	private void Start()
@@ -115,6 +118,11 @@ public class UnitBasics : MonoBehaviour {
 			CheckEachMovementTile(node);
 	}
 
+	public bool LocalCheck()
+	{
+		return NetworkClient.active;
+	}
+
 	void CheckEachMovementTile(MapMaker.Node node)
 	{
 		TileScript standingTile = map.GetTileFromNode(node);
@@ -162,7 +170,7 @@ public class UnitBasics : MonoBehaviour {
 	public void Move(float timePast)
 	{
 		int space = Mathf.CeilToInt(timePast / lerpTimePerSpace);
-
+		Debug.Log("Move");
 		if (space < shortPath.Count)
 			if (GetComponent<CharacterStats>() != null && shortPath[space] != currentSpace)
 			{

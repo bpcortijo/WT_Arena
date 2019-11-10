@@ -59,7 +59,7 @@ public class CharacterStats : MonoBehaviour
 		//		Debug.Log("Too many actions");
 		//}
 
-		if (basics.map.selectedUnit == gameObject)
+		if (basics.map.selectedUnit == gameObject && basics.LocalCheck())
 		{
 			//applies to all reloads except 4shot aka pistol
 			if (reloading)
@@ -407,32 +407,32 @@ public class CharacterStats : MonoBehaviour
 			case "North":
 				defendingTiles[i].defendNorth--;
 				if (defendingTiles[i].defendNorth == 0)
-					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+					defendingTiles[i].RemoveShield(defendingDirections[i]);
 				break;
 			case "West":
 				defendingTiles[i].defendWest--;
 				if (defendingTiles[i].defendWest == 0)
-					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+					defendingTiles[i].RemoveShield(defendingDirections[i]);
 				break;
 			case "East":
 				defendingTiles[i].defendEast--;
 				if (defendingTiles[i].defendEast == 0)
-					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+					defendingTiles[i].RemoveShield(defendingDirections[i]);
 				break;
 			case "South":
 				defendingTiles[i].defendSouth--;
 				if (defendingTiles[i].defendSouth == 0)
-					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+					defendingTiles[i].RemoveShield(defendingDirections[i]);
 				break;
 			case "Up":
 				defendingTiles[i].defendCeiling--;
 				if (defendingTiles[i].defendCeiling == 0)
-					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+					defendingTiles[i].RemoveShield(defendingDirections[i]);
 				break;
 			case "Down":
 				defendingTiles[i].defendFloor--;
 				if (defendingTiles[i].defendFloor == 0)
-					defendingTiles[i].RemoveShield(false, defendingDirections[i]);
+					defendingTiles[i].RemoveShield(defendingDirections[i]);
 				break;
 			default:
 				break;

@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Linq;
 using System.Collections;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 
-public class MapMaker : MonoBehaviour {
+public class MapMaker : NetworkBehaviour {
 	public ManagementScript gm;
 
 	int[,,] tiles;
@@ -24,11 +25,23 @@ public class MapMaker : MonoBehaviour {
 
 	public float turnMovementTime = 5;
 
+	public GameObject mapCamera;
 	void Start() {
-        CreateMap();
-		GeneratePathfindingGraph();
-        GenerateMapVisual();
-        AdjustPathfindingGraph();
+		if (NetworkServer.active)
+		{
+			CreateMap();
+			GeneratePathfindingGraph();
+			GenerateMapVisual();
+			AdjustPathfindingGraph();
+		}
+		CameraAction();
+	}
+
+	void CameraAction()
+	{
+		GameObject cam = Instantiate(mapCamera);
+		cam.GetComponent<CameraScript>().CameraSpawn(mapName);
+		Camera.main.gameObject.SetActive(false);
 	}
 
 	void CreateMap() {
@@ -171,22 +184,23 @@ public class MapMaker : MonoBehaviour {
 				for (int z = 0; z < mapSizeZ; z++)
 				{
 					TileType tt = tileTypes[tiles[x, y, z]];
-					GameObject go = Instantiate(tt.tileVisualPrefab, new Vector3(x, y, z), Quaternion.identity);
-					go.transform.parent = gameObject.transform;
-					go.transform.localRotation = Quaternion.identity;
-					go.name = "(" + x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ") ";
-					TileScript ts = go.GetComponent<TileScript>();
+					GameObject tile = Instantiate(tt.tileVisualPrefab, new Vector3(x, y, z), Quaternion.identity);
+					tile.transform.parent = gameObject.transform;
+					tile.transform.localRotation = Quaternion.identity;
+					tile.name = "(" + x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ") ";
+					TileScript ts = tile.GetComponent<TileScript>();
 					ts.tt = tt;
 					ts.tileX = x;
 					ts.tileY = y;
 					ts.tileZ = z;
 					ts.map = this;
 					if (ts.floor)
-						viableSpawns.Add(go);
+						viableSpawns.Add(tile);
+
 				}
 	}
 
-    void AdjustPathfindingGraph()
+	void AdjustPathfindingGraph()
     {
         for (int x = 0; x < mapSizeX; x++)
             for (int y = 0; y < mapSizeY; y++)
