@@ -6,6 +6,7 @@ public class ShotScript : MonoBehaviour
 {
 	MapMaker map;
 	public UnitBasics basics;
+	public PlayerScript player;
 	public GameObject target, owner;
 	public bool set = false, firstTurn = true;
 	public int speed, power, range, movingPower;

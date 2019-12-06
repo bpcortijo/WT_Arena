@@ -1,0 +1,13 @@
+Map Size: X Y Z
+10 3 10
+
+Map Specs (i.e. walls, corners, etc): X Y Z | Type | TilePreset
+(Remember the first row is 0 for each variable and the last row is the map size -1) DO NOT DELETE ANY NOTES
+3 0 5 | 8 | temp
+3 1 5 | 0 | temp
+5 1 5 | 0 | temp
+4 0 5 | 3 | temp
+5 0 5 | 3 | temp
+3 0 4 | 4 | temp
+3 0 3 | 4 | temp
+3 0 1 | 4 | temp

@@ -1,20 +1,15 @@
 using UnityEngine;
 using System.Collections;
-using UnityEngine.Networking;
 using UnityEngine.EventSystems;
 
-public class TileScript : NetworkBehaviour {
+public class TileScript : MonoBehaviour {
     public MapMaker map;
 	public string effect = null;
 	public int tileX, tileY, tileZ;
 	public GameObject shieldPrefab;
 	public bool floor, ceiling, northViable, westViable, eastViable, southViable;
 
-	[SyncVar]
-	public bool hasUnit = false;
 	public int defendFloor, defendCeiling, defendNorth, defendWest, defendEast, defendSouth;
-	[SyncVar]
-	public int finalFloorDef, finalCeilingDef, finalNorthDef, finalWestDef, finalEastDef, finalSouthDef;
 
 	[HideInInspector]
 	public TileType tt;
@@ -23,55 +18,33 @@ public class TileScript : NetworkBehaviour {
 
 	void Start()
 	{
-		CmdDefenceReset();
+		DefenceReset();
 
 		gameObject.transform.localPosition = new Vector3(gameObject.transform.localPosition.x,
 									gameObject.transform.localPosition.y + .9f,
 									gameObject.transform.localPosition.z);
 		tt.movementcost = movementcost;
-		if (NetworkServer.active)
-		{
-			if (direction == TileType.typeForArt.flat)
-				gameObject.transform.localPosition = new Vector3(gameObject.transform.localPosition.x,
-													gameObject.transform.localPosition.y - .45f,
-													gameObject.transform.localPosition.z);
-
-			else if (direction == TileType.typeForArt.nWall || direction == TileType.typeForArt.nwCorner)
-				gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
-																		gameObject.transform.localRotation.y + 180,
-																		gameObject.transform.localRotation.z);
-			else if (direction == TileType.typeForArt.wWall || direction == TileType.typeForArt.swCorner)
-				gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
-																		gameObject.transform.localRotation.y + 90,
-																		gameObject.transform.localRotation.z);
-			else if (direction == TileType.typeForArt.eWall || direction == TileType.typeForArt.neCorner)
-				gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
-																		gameObject.transform.localRotation.y - 90,
-																		gameObject.transform.localRotation.z);
-			NetworkServer.Spawn(gameObject);
-		}
-		else
+		if (direction == TileType.typeForArt.flat)
 			gameObject.transform.localPosition = new Vector3(gameObject.transform.localPosition.x,
-												gameObject.transform.localPosition.y - .9f,
+												gameObject.transform.localPosition.y - .45f,
 												gameObject.transform.localPosition.z);
-	}
 
-	[ClientRpc]
-	void RpcFindMap()
-	{
-		name = "("+ tileX + ", " + tileY + ", " + tileZ + ")";
-		transform.parent = map.gameObject.transform;
-	}
-
-	[ClientRpc]
-	public void RpcSendDef()
-	{
-		finalWestDef += defendWest;
-		finalEastDef += defendEast;
-		finalNorthDef += defendNorth;
-		finalSouthDef += defendSouth;
-		finalFloorDef += defendFloor;
-		finalCeilingDef += defendCeiling;
+		else if (direction == TileType.typeForArt.nWall || direction == TileType.typeForArt.nwCorner)
+			gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
+																	gameObject.transform.localRotation.y + 180,
+																	gameObject.transform.localRotation.z);
+		else if (direction == TileType.typeForArt.wWall || direction == TileType.typeForArt.swCorner)
+			gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
+																	gameObject.transform.localRotation.y + 90,
+																	gameObject.transform.localRotation.z);
+		else if (direction == TileType.typeForArt.eWall || direction == TileType.typeForArt.neCorner)
+			gameObject.transform.localRotation = Quaternion.Euler(gameObject.transform.localRotation.x,
+																	gameObject.transform.localRotation.y - 90,
+																	gameObject.transform.localRotation.z);
+		//		else
+		//			gameObject.transform.localPosition = new Vector3(gameObject.transform.localPosition.x,
+		//												gameObject.transform.localPosition.y - .9f,
+		//												gameObject.transform.localPosition.z);
 	}
 
 	void OnMouseUp()
@@ -80,38 +53,23 @@ public class TileScript : NetworkBehaviour {
 			if (map.selectedUnit.GetComponent<UnitBasics>().LocalCheck())
 			{
 				if (map.selectedUnit.GetComponent<ShotScript>() != null)
-					if (!map.selectedUnit.GetComponent<ShotScript>().set)
-						map.GeneratePathTo(tileX, tileY, tileZ);
+					if (map.selectedUnit.GetComponent<ShotScript>().owner.GetComponent<CharacterStats>().player.isLocalPlayer)
+						if (!map.selectedUnit.GetComponent<ShotScript>().set)
+							map.GeneratePathTo(tileX, tileY, tileZ);
 
 				if (map.selectedUnit.GetComponent<CharacterStats>() != null)
-					if (map.selectedUnit.GetComponent<CharacterStats>().defending)
-						map.selectedUnit.GetComponent<CharacterStats>().selectedTile = this;
-					else if (!map.selectedUnit.GetComponent<UnitBasics>().full)
-					{
-						map.selectedUnit.GetComponent<CharacterStats>().actions.Add("Move");
-						map.GeneratePathTo(tileX, tileY, tileZ);
-					}
+					if (map.selectedUnit.GetComponent<CharacterStats>().player.isLocalPlayer)
+						if (map.selectedUnit.GetComponent<CharacterStats>().defending)
+							map.selectedUnit.GetComponent<CharacterStats>().selectedTile = this;
+						else if (!map.selectedUnit.GetComponent<UnitBasics>().full)
+						{
+							map.selectedUnit.GetComponent<CharacterStats>().actions.Add("Move");
+							map.GeneratePathTo(tileX, tileY, tileZ);
+						}
 			}
 	}
 
-	private void Update()
-	{
-		if (defendWest < finalWestDef)
-			defendWest = finalWestDef;
-		if (defendEast < finalEastDef)
-			defendEast = finalEastDef;
-		if (defendNorth < finalNorthDef)
-			defendNorth = finalNorthDef;
-		if (defendSouth < finalSouthDef)
-			defendSouth = finalSouthDef;
-		if (defendFloor < finalFloorDef)
-			defendFloor = finalFloorDef;
-		if (defendCeiling < finalCeilingDef)
-			defendCeiling = finalCeilingDef;
-	}
-
-	[Command]
-	public void CmdDefenceReset()
+	public void DefenceReset()
 	{
 		defendWest = 0;
 		defendEast = 0;
@@ -119,12 +77,6 @@ public class TileScript : NetworkBehaviour {
 		defendSouth = 0;
 		defendFloor = 0;
 		defendCeiling = 0;
-		finalWestDef = 0;
-		finalEastDef = 0;
-		finalNorthDef = 0;
-		finalSouthDef = 0;
-		finalFloorDef = 0;
-		finalCeilingDef = 0;
 	}
 
 	public void CreateVisualShields (string dir)

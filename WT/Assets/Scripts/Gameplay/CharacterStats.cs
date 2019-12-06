@@ -7,30 +7,33 @@ public class CharacterStats : MonoBehaviour
 	public int age;
 	public GameObject headShot, bodyShot;
 
+	public PlayerScript player;
+
 	public int speed, health, shot, ammo, defence = 2;
 
 	//Perks
 	public bool quickstep = false, sprinter = false, disengagement = false, trust = false, fours = false;
 
 	[HideInInspector]
-	public int movementActions = 2;
-	[HideInInspector]
 	public UnitBasics basics;
+	[HideInInspector]
+	public int movementActions = 2;
 //	[HideInInspector]
 	public List<string> actions = new List<string>();
 
+	public int disabled = 0;
 	public List<string> loadout;
 	public GameObject[] shotTypes;
 	public int agility = 1, energy = 1, experience = 1;
 	public bool attacking = false, reloading = false, defending = false, severed=false;
-	public int disabled = 0;
 
 	public MapMaker.Node meleeThis;
 	List<GameObject> shooting = new List<GameObject>();
-	List<string> defendingDirections = new List<string>();
+	public List<string> defendingDirections = new List<string>();
 	public List<TileScript> defendingTiles = new List<TileScript>();
-	Dictionary<CharacterStats, int> damageTracker = new Dictionary<CharacterStats, int>();
+
 	List<CharacterStats> bleedCausers = new List<CharacterStats>();
+	Dictionary<CharacterStats, int> damageTracker = new Dictionary<CharacterStats, int>();
 
 	public TileScript selectedTile = null;
 
@@ -38,7 +41,7 @@ public class CharacterStats : MonoBehaviour
 	public enum DamageTypes { Shot, Slashed, Bleed }
 
 	void Start()
-    {
+	{
 		shot = 0;
 		ammo = 4;
 		speed = agility;
@@ -46,20 +49,19 @@ public class CharacterStats : MonoBehaviour
 		basics = gameObject.GetComponent<UnitBasics>();
 		basics.speed = speed;
 		basics.vector = true;
-    }
+
+		foreach (GameObject p in FindObjectOfType<ManagementScript>().players)
+			if (basics.playerNum == p.GetComponent<PlayerScript>().num)
+				player = p.GetComponent<PlayerScript>();
+
+		transform.parent = player.transform;
+		player.units.Add(gameObject);
+	}
 
 	// Update is called once per frame
 	void Update()
 	{
-		//if (Input.GetKeyUp(KeyCode.Return))
-		//{
-		//	if (actions.Count <= 2)
-		//		actions.Add(currentAction);
-		//	else
-		//		Debug.Log("Too many actions");
-		//}
-
-		if (basics.map.selectedUnit == gameObject && basics.LocalCheck())
+		if (basics.map.selectedUnit == gameObject && basics.LocalCheck() && player.isLocalPlayer)
 		{
 			//applies to all reloads except 4shot aka pistol
 			if (reloading)
@@ -90,32 +92,34 @@ public class CharacterStats : MonoBehaviour
 				if (Input.GetKeyUp(KeyCode.S))
 					if (Input.GetKey(KeyCode.LeftShift) && disabled <= 0)
 					{
-						if (loadout.Contains("4shot"))
-							SuperPistolShot();
 						if (loadout.Contains("SMG"))
 							SuperSubShot();
 						if (loadout.Contains("AR"))
 							SuperRifleShot();
+						if (loadout.Contains("4shot"))
+							SuperPistolShot();
 						if (loadout.Contains("Sniper"))
 							SuperSniperShot();
 						if (loadout.Contains("Shotgun"))
 							SuperShotgunShot();
+
 						actions.Add("Shoot");
 					}
 					else
 					{
-						if (loadout.Contains("4shot"))
-							PistolShot();
 						if (loadout.Contains("SMG"))
 							SubShot();
 						if (loadout.Contains("AR"))
 							RifleShot();
+						if (loadout.Contains("4shot"))
+							PistolShot();
 						if (loadout.Contains("Sniper"))
 							SniperShot();
 						if (loadout.Contains("Shotgun"))
 							ShotgunShot();
 						actions.Add("Shoot");
 					}
+
 				if (Input.GetKeyUp(KeyCode.R))
 				{
 					actions.Add("Reload");
@@ -124,6 +128,7 @@ public class CharacterStats : MonoBehaviour
 					else
 						reloading = true;
 				}
+
 				if (Input.GetKeyUp(KeyCode.A))
 					if (!attacking)
 						attacking = true;
@@ -335,6 +340,7 @@ public class CharacterStats : MonoBehaviour
 		shot.transform.position = adjustedPos;
 		shot.transform.localScale = new Vector3(.25f, .25f, .25f);
 		ShotScript ss = shot.GetComponent<ShotScript>();
+		ss.player = player;
 
 		if (shotType.name == "Strong")
 			power += 1;

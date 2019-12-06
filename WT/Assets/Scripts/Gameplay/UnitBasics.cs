@@ -8,21 +8,25 @@ public class UnitBasics : NetworkBehaviour {
 	public float lerpTimePerSpace = 5;
 	public GameObject path;
 
+	[SyncVar]
+	public int playerNum;
+
+	public int turns;
 	public MapMaker map;
 	public float unitHeight = 1f;
-	public int tileX, tileY, tileZ, turns;
+	[SyncVar]
+	public int tileX, tileY, tileZ;
 	public bool vector = false, full = false;
 
 	MapMaker.Node currentSpace = null;
 	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
-	[SyncVar]
 	public List<MapMaker.Node> shortPath = new List<MapMaker.Node>();
-	[SyncVar]
 	public List<MapMaker.Node> plannedPath = new List<MapMaker.Node>();
 
 	private void Start()
 	{
-		CharacterSetCurrentSpace(map.graph[tileX, tileY, tileZ],GetComponent<CharacterStats>());
+		if (hasAuthority)
+			CharacterSetCurrentSpace(map.graph[tileX, tileY, tileZ],GetComponent<CharacterStats>());
 	}
 
 	public void CheckPath()
@@ -69,15 +73,16 @@ public class UnitBasics : NetworkBehaviour {
 		else
 			shortPath = new List<MapMaker.Node>();
 
-		//foreach (MapMaker.Node node in shortPath)
-		//	if (shortPath.IndexOf(node) != shortPath.LastIndexOf(node))
-		//	{
-		//		int i = shortPath.LastIndexOf(node);
-		//		while (i < shortPath.Count)
-		//			shortPath.RemoveAt(shortPath.Count - 1);
-		//		while (i < plannedPath.Count)
-		//			plannedPath.RemoveAt(plannedPath.Count - 1);
-		//	}
+		foreach (MapMaker.Node node in shortPath)
+			if (shortPath.IndexOf(node) != shortPath.LastIndexOf(node))
+			{
+				int i = shortPath.LastIndexOf(node);
+				while (i < shortPath.Count)
+					shortPath.RemoveAt(shortPath.Count - 1);
+				while (i < plannedPath.Count)
+					plannedPath.RemoveAt(plannedPath.Count - 1);
+			}
+
 		DrawLines();
 	}
 
@@ -89,6 +94,7 @@ public class UnitBasics : NetworkBehaviour {
 		visibleShortPath = Instantiate(path);
 		visibleShortPath.GetComponent<VisualPathScript>().map = map;
 		visibleShortPath.GetComponent<VisualPathScript>().speed = speed;
+		visibleShortPath.GetComponent<VisualPathScript>().represents = this;
 		visibleShortPath.GetComponent<VisualPathScript>().nodePath = shortPath;
 
 		if (tag == "Shot")
@@ -104,12 +110,15 @@ public class UnitBasics : NetworkBehaviour {
 			visiblePlannedPath.GetComponent<LineRenderer>().endColor = Color.black;
 			fullLine.nodePath = shortPath;
 			fullLine.speed = speed;
+			NetworkServer.Spawn(visiblePlannedPath);
 		}
 		else
 		{
 			visibleShortPath.GetComponent<LineRenderer>().startColor = Color.blue;
 			visibleShortPath.GetComponent<LineRenderer>().endColor = Color.blue;
 		}
+
+		NetworkServer.Spawn(visibleShortPath);
 	}
 
 	public void ReMapMovement()
@@ -151,13 +160,13 @@ public class UnitBasics : NetworkBehaviour {
 				if (GetComponent<CharacterStats>() != null)
 					while (shortPath.Count + 1 > shortPath.IndexOf(node))
 						shortPath.Remove(shortPath[shortPath.Count - 1]);
-			//else
-			//{
-			//	GetComponent<ShotScript>().movingPower--;
-			//	if (GetComponent<ShotScript>().movingPower<=0)
-			//		while (shortPath.Count + 1 > shortPath.IndexOf(node))
-			//			shortPath.Remove(shortPath[shortPath.Count - 1]);
-			//}
+				else
+				{
+					GetComponent<ShotScript>().movingPower--;
+					if (GetComponent<ShotScript>().movingPower <= 0)
+						while (shortPath.Count + 1 > shortPath.IndexOf(node))
+							shortPath.Remove(shortPath[shortPath.Count - 1]);
+				}
 		}
 	}
 
@@ -178,21 +187,14 @@ public class UnitBasics : NetworkBehaviour {
 
 				transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, true);
 
-				//Vector3 nextSpace = map.TileCoordToWorldCoord(shortPath[space].x, shortPath[space].y, shortPath[space].z, true);
-				//if (GetComponent<ShotScript>() != null)
-				//	nextSpace.y += unitHeight;
-
-				//transform.position = Vector3.Lerp(transform.position, nextSpace, (timePast - space + 1) / lerpTimePerSpace);
 			}
 	}
 
 	void CharacterSetCurrentSpace(MapMaker.Node nextStep, CharacterStats me)
 	{
-		if (!map.GetTileFromNode(nextStep).hasUnit)
+		if (CheckAllPositions())
 		{
 			Debug.Log(name + " stepped on to (" + nextStep.x + "," + nextStep.y + "," + nextStep.z + ")");
-			if (currentSpace != null)
-				map.GetTileFromNode(currentSpace).hasUnit = false;
 			currentSpace = nextStep;
 
 			foreach (ShotScript shot in map.attackPaths)
@@ -204,15 +206,23 @@ public class UnitBasics : NetworkBehaviour {
 			tileX = currentSpace.x;
 			tileY = currentSpace.y;
 			tileZ = currentSpace.z;
-			map.GetTileFromNode(currentSpace).hasUnit = true;
 		}
 		else
 		{
 			Debug.Log(name + " tried to step on to (" + nextStep.x + "," + nextStep.y + "," + nextStep.z + ")");
-			Debug.Break();
 			while (shortPath.Count > shortPath.IndexOf(currentSpace) + 1)
 				shortPath.RemoveAt(shortPath.Count - 1);
 		}
+	}
+
+	bool CheckAllPositions()
+	{
+		CharacterStats[] characters = FindObjectsOfType<CharacterStats>();
+		foreach (CharacterStats character in characters)
+			if (character.gameObject != gameObject)
+				if (character.basics.tileX != tileX || character.basics.tileY != tileY || character.basics.tileZ != tileZ)
+					return true;
+		return false;
 	}
 
 	void ShotSetCurrentSpace(MapMaker.Node nextStep, ShotScript myBullet)

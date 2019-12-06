@@ -1,16 +1,19 @@
-﻿using UnityEngine;
+﻿using System.IO;
+using UnityEngine;
 using System.Linq;
 using System.Collections;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 
 public class MapMaker : NetworkBehaviour {
+	string fileName = "";
 	public ManagementScript gm;
 
 	int[,,] tiles;
     public Node[,,] graph;
 	int focusedHeight = 0;
 	public string mapName = null;
+	public int minSpawnDist = 3;
 
     int mapSizeX = 10, mapSizeY = 1, mapSizeZ = 10;
 
@@ -26,15 +29,21 @@ public class MapMaker : NetworkBehaviour {
 	public float turnMovementTime = 5;
 
 	public GameObject mapCamera;
-	void Start() {
-		if (NetworkServer.active)
-		{
-			CreateMap();
-			GeneratePathfindingGraph();
-			GenerateMapVisual();
-			AdjustPathfindingGraph();
-		}
+
+	void Start()
+	{
+		ReadMap();
+		GeneratePathfindingGraph();
+		GenerateMapVisual();
+		AdjustPathfindingGraph();
 		CameraAction();
+
+		PlayerScript[] players = FindObjectsOfType<PlayerScript>();
+		foreach (PlayerScript player in players)
+		{
+			player.map = this;
+			player.SpawnTeam();
+		}
 	}
 
 	void CameraAction()
@@ -44,28 +53,43 @@ public class MapMaker : NetworkBehaviour {
 		Camera.main.gameObject.SetActive(false);
 	}
 
-	void CreateMap() {
-		switch (mapName)
+	void ReadMap() {
+		if (mapName == null || mapName == "")
+			mapName = "Test";
+		string[] mapNameWords = mapName.Split(' ');
+		foreach (string word in mapNameWords)
+			fileName += word;
+		fileName += "Map";
+		var mapFile = Resources.Load<TextAsset>("MapFiles/" + fileName);
+		List<string> mapData = mapFile.text.Split('\n').ToList();
+
+		if(NetworkServer.active)
+		foreach(string line in mapData)
+			RpcCheckData(mapData.IndexOf(line),line);
+
+		string[] mapDimensions = mapData[1].Split(' ');
+		mapSizeX = int.Parse(mapDimensions[0]);
+		mapSizeY = int.Parse(mapDimensions[1]);
+		mapSizeZ = int.Parse(mapDimensions[2]);
+
+		GenerateMapData();
+
+		for(int i=5;i<mapData.Count;i++)
 		{
-
-			default:
-				mapSizeX = 10;
-				mapSizeY = 3;
-				mapSizeZ = 10;
-
-				GenerateMapData();
-
-				tiles[3, 0, 5] = 8;
-				tiles[3, 1, 5] = 0;
-				tiles[5, 1, 5] = 0;
-				tiles[4, 0, 5] = 3;
-				tiles[5, 0, 5] = 3;
-				tiles[3, 0, 4] = 4;
-				tiles[3, 0, 3] = 4;
-				tiles[3, 0, 1] = 4;
-				break;
+			List<string> line = mapData[i].Split(' ').ToList();
+			tiles[int.Parse(line[0]), int.Parse(line[1]), int.Parse(line[2])] = int.Parse(line[4]);
 		}
-    }
+	}
+
+	[ClientRpc]
+	void RpcCheckData(int i, string line)
+	{
+		var mapFile = Resources.Load<TextAsset>("MapFiles/" + fileName);
+		List<string> localMapData = mapFile.text.Split('\n').ToList();
+
+		if (line == localMapData[i])
+			Debug.Log("Cheater!");
+	}
 
 	void GenerateMapData()
 	{
@@ -196,7 +220,6 @@ public class MapMaker : NetworkBehaviour {
 					ts.map = this;
 					if (ts.floor)
 						viableSpawns.Add(tile);
-
 				}
 	}
 
@@ -576,9 +599,46 @@ public class MapMaker : NetworkBehaviour {
 		int num = Random.Range(0, viableSpawns.Count);
 
 		GameObject spawnPoint = viableSpawns[num];
-		viableSpawns.Remove(viableSpawns[num]);
+		SpawnLimit(viableSpawns[num].GetComponent<TileScript>());
 		return spawnPoint;
     }
+
+	void SpawnLimit(TileScript spawnTile)
+	{
+		int x = spawnTile.tileX - minSpawnDist;
+		int xMax = spawnTile.tileX + minSpawnDist;
+
+		while (x <= xMax)
+		{
+			if (x >= 0 && x < mapSizeX)
+			{
+				int y = spawnTile.tileY - minSpawnDist;
+				int yMax = spawnTile.tileY + minSpawnDist;
+				while (y <= yMax)
+				{
+					if (y >= 0 && y < mapSizeY)
+					{
+						int z = spawnTile.tileZ - minSpawnDist;
+						int zMax = spawnTile.tileZ + minSpawnDist;
+						while (z <= zMax)
+						{
+							if (z >= 0 && z < mapSizeZ)
+							{
+								GameObject possibleSpawn = GetTileFromNode(graph[x, y, z]).gameObject;
+								if (viableSpawns.Contains(possibleSpawn))
+									viableSpawns.Remove(possibleSpawn);
+							}
+							z++;
+						}
+					}
+					y++;
+				}
+			}
+			x++;
+		}
+
+		Debug.Log(viableSpawns.Count);
+	}
 
 	public void Select(GameObject go)
 	{
@@ -599,6 +659,17 @@ public class MapMaker : NetworkBehaviour {
 		while (nodes.Count > p)
 			nodes.RemoveAt(p);
 		character.basics.CheckPath();
+	}
+
+	public Node TextToNode(string text)
+	{
+		string[] info = text.Split(',');
+		return graph[int.Parse(info[0]), int.Parse(info[1]), int.Parse(info[2])];
+	}
+
+	public string NodeToText(Node node)
+	{
+		return node.x.ToString() + "," + node.y.ToString() + "," + node.z.ToString();
 	}
 
     public class Node

@@ -9,7 +9,7 @@ public class DetailScript : MonoBehaviour
 
 	bool playerHas = false;
 	public TeamSelect teamPage;
-	public PreGamePlayerScript localTemp;
+	public PlayerScript localPlayer;
 	public Text selectLocalTeam, cName, cAge;
 
 	[HideInInspector]
@@ -51,16 +51,10 @@ public class DetailScript : MonoBehaviour
 
 	void EditDetails()
 	{
-		if (localTemp.myTeam.Contains(currentCharacter))
-		{
-			playerHas = true;
+		if (localPlayer.team.Contains(currentCharacter))
 			selectLocalTeam.text = "Remove from Team 1";
-		}
 		else
-		{
-			playerHas = false;
 			selectLocalTeam.text = "Add to Team 1";
-		}
 
 		/*if (P2.characters.Contains(currentCharacter))
 		{
@@ -79,10 +73,7 @@ public class DetailScript : MonoBehaviour
 
 	public void EditLocalTeam()
 	{
-		if (playerHas)
-			localTemp.myTeam.Remove(currentCharacter);
-		else
-			localTemp.myTeam.Add(currentCharacter);
+		localPlayer.RpcEditTeam(currentCharacter);
 		teamPage.UpdateLocalTeam();
 		EditDetails();
 	}

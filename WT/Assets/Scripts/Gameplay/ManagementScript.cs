@@ -8,9 +8,7 @@ public class ManagementScript : NetworkBehaviour {
 	MapMaker mapCode;
 	public GameObject map;
 
-	public GameObject playerPrefab;
-	public PreGamePlayerScript localTemp;
-
+	public PlayerScript localPlayer;
 	public List<GameObject> players;
 	public List<string> startingPlayers;
 
@@ -23,6 +21,8 @@ public class ManagementScript : NetworkBehaviour {
 
 	public void GameStart()
 	{
+		foreach (PlayerScript player in FindObjectsOfType<PlayerScript>())
+				player.FillPlayerBlanks();
 		NetworkManager.singleton.ServerChangeScene("Game");
 	}
 
@@ -34,22 +34,31 @@ public class ManagementScript : NetworkBehaviour {
 	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 	{
 		if (scene.name == "Game")
-		{
 			if (NetworkServer.active)
 			{
 				map = Instantiate(map);
 				mapCode = map.GetComponent<MapMaker>();
 				mapCode.gm = this;
-
+				foreach (GameObject player in players)
+				{
+					player.GetComponent<PlayerScript>().map = mapCode;
+					player.GetComponent<PlayerScript>().num = players.IndexOf(player);
+				}
 				NetworkServer.Spawn(map);
-
-				CreatePlayer();
 
 				turnTime = turnTimer + 30f;
 				inGame = true;
 				// Get Light
+				CmdSpawnPlayers();
 			}
-		}
+	}
+
+	[Command]
+	void CmdSpawnPlayers()
+	{
+		NetworkServer.Spawn(localPlayer.gameObject);
+		players.Add(localPlayer.gameObject);
+		startingPlayers.Add(localPlayer.pName);
 	}
 
 	void Update()
@@ -78,39 +87,70 @@ public class ManagementScript : NetworkBehaviour {
 		if (playResults)
 		{
 			foreach (CharacterStats ch in mapCode.characterPaths)
-				if (ch.basics.shortPath.Count > 0)
+				if (ch.basics.shortPath.Count > 0 &&ch.basics.hasAuthority)
 					ch.basics.Move(resultsTime);
 			foreach (ShotScript atk in mapCode.attackPaths)
-				atk.basics.Move(resultsTime);
+				if (atk.basics.hasAuthority)
+					atk.basics.Move(resultsTime);
 		}
 	}
 
 	void TurnResults()
 	{
 		GetCharacterPaths();
-		//mapCode.GetAttackPaths();
-		//foreach (CharacterStats ch in mapCode.characterPaths)
-		//{
-		//	ch.basics.ReMapMovement();
-		//	ch.basics.SetPosition(resultsTimer);
-		//	ch.basics.DrawLines();
-		//}
+		mapCode.GetAttackPaths();
+		foreach (CharacterStats ch in mapCode.characterPaths)
+		{
+			ch.basics.ReMapMovement();
+			ch.basics.SetPosition(resultsTimer);
+			ch.basics.DrawLines();
+			for (int i=0; i<ch.defendingTiles.Count; i++)
+				RpcSendDef(ch.defendingTiles[i].name,ch.defendingDirections[i]);
+		}
 
-		//foreach (ShotScript atk in mapCode.attackPaths)
-		//{
-		//	atk.basics.ReMapMovement();
-		//	atk.basics.SetPosition(resultsTimer);
-		//	atk.basics.DrawLines();
-		//}
+		foreach (ShotScript atk in mapCode.attackPaths)
+		{
+			atk.basics.ReMapMovement();
+			atk.basics.SetPosition(resultsTimer);
+			atk.basics.DrawLines();
+		}
 
-		//foreach (CharacterStats ch in mapCode.characterPaths)
-		//{
-		//	foreach (CharacterStats enemy in mapCode.characterPaths)
-		//		if (ch.meleeThis == mapCode.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ])
-		//				ch.MeleeHit(enemy);
-		//}
-		Debug.Break();
+		foreach (CharacterStats ch in mapCode.characterPaths)
+		{
+			foreach (CharacterStats enemy in mapCode.characterPaths)
+				if (ch.meleeThis == mapCode.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ])
+					ch.MeleeHit(enemy);
+		}
 		playResults = true;
+	}
+
+	[ClientRpc]
+	public void RpcSendDef(string name, string dir)
+	{
+		TileScript tile = map.transform.Find(name).GetComponent<TileScript>();
+		switch (dir)
+		{
+			case "West":
+				tile.defendWest++;
+				break;
+			case "East":
+				tile.defendEast++;
+				break;
+			case "North":
+				tile.defendNorth++;
+				break;
+			case "South":
+				tile.defendSouth++;
+				break;
+			case "Floor":
+				tile.defendFloor++;
+				break;
+			case "Ceiling":
+				tile.defendCeiling++;
+				break;
+			default:
+				break;
+		}
 	}
 
 	float CheckForHit(ShotScript atk)
@@ -140,10 +180,10 @@ public class ManagementScript : NetworkBehaviour {
 
 		turn++;
 		StartCoroutine(EndTurn());
-		if (turn >= maxTurns /*|| players.Count <= 1*/)
-			EndGame();
-		else
-		{
+//		if (turn >= maxTurns || players.Count <= 1)
+//			EndGame();
+//		else
+//		{
 			foreach (GameObject p in players)
 			{
 				PlayerScript player = p.GetComponent<PlayerScript>();
@@ -151,19 +191,7 @@ public class ManagementScript : NetworkBehaviour {
 				player.canEnd = true;
 			}
 			turnTime = turnTimer;
-		}
-	}
-
-	void CreatePlayer()
-	{
-		GameObject p = Instantiate(playerPrefab);
-		p.transform.parent = transform;
-		PlayerScript pScript = p.GetComponent<PlayerScript>();
-		pScript.map = mapCode;
-		pScript.characters = localTemp.myTeam;
-		pScript.pName = localTemp.localPlayerName;
-		startingPlayers.Add(localTemp.localPlayerName);
-		players.Add(p);
+//		}
 	}
 
 	void GetCharacterPaths()
