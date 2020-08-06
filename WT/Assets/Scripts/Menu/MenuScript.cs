@@ -5,7 +5,8 @@ using UnityEngine.SceneManagement;
 
 public class MenuScript : MonoBehaviour
 {
-	float x, currentPage;
+	float x;
+	public int currentPage;
 	public float menuSpeed;
 	List<Vector3> currentPos;
 	public List<GameObject> Menus;

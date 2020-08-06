@@ -10,52 +10,63 @@ public class UnitBasics : NetworkBehaviour {
 
 	[SyncVar]
 	public int playerNum;
+	[SyncVar]
+	public int tileX, tileY, tileZ;
 
 	public int turns;
 	public MapMaker map;
 	public float unitHeight = 1f;
-	[SyncVar]
-	public int tileX, tileY, tileZ;
-	public bool vector = false, full = false;
+
+	public bool fullPath = false;
 
 	MapMaker.Node currentSpace = null;
 	public List<MapMaker.Node> keyPoints = new List<MapMaker.Node>();
 	public List<MapMaker.Node> shortPath = new List<MapMaker.Node>();
 	public List<MapMaker.Node> plannedPath = new List<MapMaker.Node>();
 
+	public List<MapMaker.Node> fov = new List<MapMaker.Node>();
+
+	public LayerMask tileMask;
+
 	private void Start()
 	{
-		if (hasAuthority)
-			CharacterSetCurrentSpace(map.graph[tileX, tileY, tileZ],GetComponent<CharacterStats>());
+		if (gameObject.GetComponent<CharacterStats>() != null)
+			CharacterSetCurrentSpace(map.graph[tileX, tileY, tileZ], GetComponent<CharacterStats>());
 	}
 
 	public void CheckPath()
 	{
 		// Create short path (the path the character or bullet plans to take this turn) and Remove any points past max distance
-		full = false;
+		fullPath = false;
 		if (plannedPath != null)
 		{
 			shortPath = new List<MapMaker.Node>(plannedPath);
 			if (gameObject.tag == "Player")
-				if (gameObject.GetComponent<CharacterStats>().actions.Contains("Reload"))
-				{
-					// Reloading is a free action while moving
-					if (gameObject.GetComponent<CharacterStats>().movementActions + 1 == 2 && gameObject.GetComponent<CharacterStats>().sprinter)
-						bonus += 2;
+				if (!gameObject.GetComponent<CharacterStats>().wrapped)
+					if (gameObject.GetComponent<CharacterStats>().actions.Contains("Reload"))
+					{
+						// Reloading is a free action while moving
+						if (gameObject.GetComponent<CharacterStats>().movementActions + 1 == 2 && gameObject.GetComponent<CharacterStats>().sprint)
+							bonus += 2;
 
-					while (shortPath.Count > speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
-						shortPath.RemoveAt(shortPath.Count - 1);
-					if (shortPath.Count == speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
-						full = true;
-				}
+						while (shortPath.Count > speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
+							shortPath.RemoveAt(shortPath.Count - 1);
+						if (shortPath.Count == speed * (gameObject.GetComponent<CharacterStats>().movementActions + 1) + 1 + bonus)
+							fullPath = true;
+					}
+					else
+					{
+						if (gameObject.GetComponent<CharacterStats>().movementActions == 2 && gameObject.GetComponent<CharacterStats>().sprint)
+							bonus += 2;
+						while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
+							shortPath.RemoveAt(shortPath.Count - 1);
+						if (shortPath.Count == speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
+							fullPath = true;
+					}
 				else
 				{
-					if (gameObject.GetComponent<CharacterStats>().movementActions == 2 && gameObject.GetComponent<CharacterStats>().sprinter)
-						bonus += 2;
-					while (shortPath.Count > speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
-						shortPath.RemoveAt(shortPath.Count - 1);
-					if (shortPath.Count == speed * gameObject.GetComponent<CharacterStats>().movementActions + 1 + bonus)
-						full = true;
+					plannedPath = new List<MapMaker.Node>();
+					shortPath = new List<MapMaker.Node>();
 				}
 
 			if (gameObject.tag == "Shot")
@@ -67,21 +78,21 @@ public class UnitBasics : NetworkBehaviour {
 					plannedPath.RemoveAt(plannedPath.Count - 1);
 
 				if (plannedPath.Count == speed * turns + 1)
-					full = true;
+					fullPath = true;
 			}
 		}
 		else
 			shortPath = new List<MapMaker.Node>();
 
-		foreach (MapMaker.Node node in shortPath)
-			if (shortPath.IndexOf(node) != shortPath.LastIndexOf(node))
-			{
-				int i = shortPath.LastIndexOf(node);
-				while (i < shortPath.Count)
-					shortPath.RemoveAt(shortPath.Count - 1);
-				while (i < plannedPath.Count)
-					plannedPath.RemoveAt(plannedPath.Count - 1);
-			}
+		//foreach (MapMaker.Node node in shortPath)
+		//	if (shortPath.IndexOf(node) != shortPath.LastIndexOf(node))
+		//	{
+		//		int i = shortPath.LastIndexOf(node);
+		//		while (i < shortPath.Count)
+		//			shortPath.RemoveAt(shortPath.Count - 1);
+		//		while (i < plannedPath.Count)
+		//			plannedPath.RemoveAt(plannedPath.Count - 1);
+		//	}
 
 		DrawLines();
 	}
@@ -160,33 +171,35 @@ public class UnitBasics : NetworkBehaviour {
 				if (GetComponent<CharacterStats>() != null)
 					while (shortPath.Count + 1 > shortPath.IndexOf(node))
 						shortPath.Remove(shortPath[shortPath.Count - 1]);
-				else
-				{
-					GetComponent<ShotScript>().movingPower--;
-					if (GetComponent<ShotScript>().movingPower <= 0)
-						while (shortPath.Count + 1 > shortPath.IndexOf(node))
-							shortPath.Remove(shortPath[shortPath.Count - 1]);
-				}
 		}
 	}
 
 	public void SetPosition(float timeToFinalPos)
 	{
-		if (shortPath.Count > 0)
+		if (shortPath.Count > 1)
 			lerpTimePerSpace = timeToFinalPos / shortPath.Count;
+		//else
+		//	AdjustFOV();
 	}
 
 	public void Move(float timePast)
 	{
+		Debug.Log(name + shortPath.Count);
 		int space = Mathf.CeilToInt(timePast / lerpTimePerSpace);
-		Debug.Log("Move");
-		if (space < shortPath.Count)
-			if (GetComponent<CharacterStats>() != null && shortPath[space] != currentSpace)
+		if (space < shortPath.Count && shortPath[space] != currentSpace)
+			if (GetComponent<CharacterStats>() != null)
 			{
 				CharacterSetCurrentSpace(shortPath[space], GetComponent<CharacterStats>());
 
 				transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, true);
+				if (GetComponent<CharacterStats>().canHit)
+					GetComponent<CharacterStats>().CheckMelee();
+			}
+			else if (GetComponent<ShotScript>() != null)
+			{
+				ShotSetCurrentSpace(shortPath[space], GetComponent<ShotScript>());
 
+				transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, false);
 			}
 	}
 
@@ -194,18 +207,19 @@ public class UnitBasics : NetworkBehaviour {
 	{
 		if (CheckAllPositions())
 		{
-			Debug.Log(name + " stepped on to (" + nextStep.x + "," + nextStep.y + "," + nextStep.z + ")");
 			currentSpace = nextStep;
 
 			foreach (ShotScript shot in map.attackPaths)
 				if (shot.basics.currentSpace == currentSpace)
-					if (shot.owner.transform.parent != transform.parent)
-						shot.Impact(me, shortPath.IndexOf(currentSpace) + 1 / shortPath.Count, false);
-					else if (!shot.owner.GetComponent<CharacterStats>().trust && !me.trust)
-						shot.Impact(me, shortPath.IndexOf(currentSpace) + 1 / shortPath.Count, false);
+					if (shot.player.transform != transform.parent || !shot.owner.GetComponent<CharacterStats>().trust && !me.trust)
+						if(shot.owner.GetComponent<CharacterStats>().leadingShot)
+							shot.Impact(me, shortPath.IndexOf(currentSpace) + 2 / shortPath.Count, false);
+						else
+							shot.Impact(me, shortPath.IndexOf(currentSpace) + 1 / shortPath.Count, false);
 			tileX = currentSpace.x;
 			tileY = currentSpace.y;
 			tileZ = currentSpace.z;
+			AdjustFOV();
 		}
 		else
 		{
@@ -227,23 +241,26 @@ public class UnitBasics : NetworkBehaviour {
 
 	void ShotSetCurrentSpace(MapMaker.Node nextStep, ShotScript myBullet)
 	{
+		ShotScript thisShot = GetComponent<ShotScript>();
+		currentSpace = nextStep;
+
 		foreach (ShotScript shot in map.attackPaths)
 			if (shot.owner.transform.parent != myBullet.owner.transform.parent
 					&& shot.basics.currentSpace == currentSpace)
 				Debug.Log("Shot out of the air");
 		foreach (CharacterStats character in map.characterPaths)
 			if (character.basics.currentSpace == currentSpace)
-				if (character.transform.parent != myBullet.owner.transform.parent)
+				if (character.transform.parent != myBullet.player.transform || !character.trust && !thisShot.owner.GetComponent<CharacterStats>().trust)
 				{
-					myBullet.Impact(character,
-						character.basics.shortPath.IndexOf(currentSpace) / character.basics.shortPath.Count,
-						false);
-				}
-				else if (!character.trust && !GetComponent<ShotScript>().owner.GetComponent<CharacterStats>().trust)
-				{
-					myBullet.Impact(character,
-						character.basics.shortPath.IndexOf(currentSpace) / character.basics.shortPath.Count,
-						false);
+					if (character.basics.shortPath.IndexOf(currentSpace) != 0 || !character.quickstep)
+						if (thisShot.owner.GetComponent<CharacterStats>().leadingShot)
+							myBullet.Impact(character,
+								character.basics.shortPath.IndexOf(currentSpace) + 2 / character.basics.shortPath.Count,
+								false);
+						else
+							myBullet.Impact(character,
+								character.basics.shortPath.IndexOf(currentSpace) + 1 / character.basics.shortPath.Count,
+								false);
 				}
 				else
 					Debug.Log("Trust");
@@ -276,5 +293,43 @@ public class UnitBasics : NetworkBehaviour {
 			if ((tileZ - z) / (tileY - y) == 1 || (tileZ - z) / (tileY - y) == -1 || (tileZ - z) / (tileY - y) == 0)
 				return true;
 		return false;
+	}
+
+	public void AdjustFOV()
+	{
+		CharacterStats ch = GetComponent<CharacterStats>();
+
+		List<MapMaker.Node> vision = new List<MapMaker.Node>();
+		for (int x = tileX - ch.vision; x <= tileX + ch.vision; x++)
+			if (x >= 0 && x < map.mapSizeX)
+				for (int y = tileY - ch.vision; y <= tileY + ch.vision; y++)
+					if (y >= 0 && y < map.mapSizeY)
+						for (int z = tileZ - ch.vision; z <= tileZ + ch.vision; z++)
+							if (z >= 0 && z < map.mapSizeZ)
+								if (PerceptionCheck(map.graph[x, y, z]))
+								{
+									vision.Add(map.graph[x, y, z]);
+									map.GetTileFromNode(map.graph[x, y, z]).inView = true;
+								}
+
+		List<MapMaker.Node> temp = new List<MapMaker.Node>();
+		foreach (MapMaker.Node node in fov)
+			if (!vision.Contains(node))
+				temp.Add(node);
+
+		fov = vision;
+
+		foreach (MapMaker.Node node in temp)
+			map.GetTileFromNode(node).CheckView();
+
+		ch.player.CheckVisibility();
+	}
+
+	public bool PerceptionCheck(MapMaker.Node node)
+	{
+		if (Physics.Linecast(new Vector3(transform.position.x, transform.position.y + unitHeight, transform.position.z),
+								new Vector3(node.x, node.y + 1, node.z), tileMask))
+			return false;
+		return true;
 	}
 }

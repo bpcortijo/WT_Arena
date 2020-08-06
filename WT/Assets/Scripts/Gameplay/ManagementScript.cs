@@ -97,6 +97,7 @@ public class ManagementScript : NetworkBehaviour {
 
 	void TurnResults()
 	{
+		GetAttackPaths();
 		GetCharacterPaths();
 		mapCode.GetAttackPaths();
 		foreach (CharacterStats ch in mapCode.characterPaths)
@@ -115,12 +116,6 @@ public class ManagementScript : NetworkBehaviour {
 			atk.basics.DrawLines();
 		}
 
-		foreach (CharacterStats ch in mapCode.characterPaths)
-		{
-			foreach (CharacterStats enemy in mapCode.characterPaths)
-				if (ch.meleeThis == mapCode.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ])
-					ch.MeleeHit(enemy);
-		}
 		playResults = true;
 	}
 
@@ -192,6 +187,12 @@ public class ManagementScript : NetworkBehaviour {
 			}
 			turnTime = turnTimer;
 //		}
+	}
+
+	void GetAttackPaths()
+	{
+		foreach (ShotScript shot in FindObjectsOfType<ShotScript>())
+				mapCode.attackPaths.Add(shot);
 	}
 
 	void GetCharacterPaths()

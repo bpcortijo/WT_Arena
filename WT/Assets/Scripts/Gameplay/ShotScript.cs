@@ -1,29 +1,33 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 public class ShotScript : MonoBehaviour
 {
 	MapMaker map;
+	public GameObject owner;
 	public UnitBasics basics;
 	public PlayerScript player;
-	public GameObject target, owner;
+	public MapMaker.Node origin;
+	public int speed, power, range;
 	public bool set = false, firstTurn = true;
-	public int speed, power, range, movingPower;
 
 	void Start()
 	{
 		map = owner.GetComponent<UnitBasics>().map;
+		basics = gameObject.GetComponent<UnitBasics>();
 		basics.map = map;
 		basics.speed = speed;
 		basics.turns = range/speed;
-		movingPower = power;
+
+		player.Spawn(gameObject);
 	}
 
 	public void DamageOwner()
 	{
 		firstTurn = false;
-		owner.GetComponent<CharacterStats>().health -= Mathf.RoundToInt(Mathf.Pow(2,power));
+		owner.GetComponent<CharacterStats>().health -= Mathf.RoundToInt(Mathf.Pow(2, power));
+		Debug.Log("DamageOwner");
 	}
 
 	void Update()
@@ -42,29 +46,44 @@ public class ShotScript : MonoBehaviour
 		}
 	}
 
-	public void Hunter()
+	void ThroughWall(TileScript ts, string direction)
 	{
-		int targetX, targetY, targetZ;
-		GameObject prevUnit = map.selectedUnit;
-		map.selectedUnit = gameObject;
+		int priorPower = power;
 
-		if (target.GetComponent<UnitBasics>() != null)
+		switch (direction)
 		{
-			targetX = target.GetComponent<UnitBasics>().tileX;
-			targetY = target.GetComponent<UnitBasics>().tileY;
-			targetZ = target.GetComponent<UnitBasics>().tileZ;
-		}
-		else
-		{
-			targetX = target.GetComponent<TileScript>().tileX;
-			targetY = target.GetComponent<TileScript>().tileY;
-			targetZ = target.GetComponent<TileScript>().tileZ;
+			case "North":
+				power -= ts.defendNorth;
+				ts.defendNorth -= priorPower;
+				break;
+			case "West":
+				power -= ts.defendWest;
+				ts.defendWest -= priorPower;
+				break;
+			case "East":
+				power -= ts.defendEast;
+				ts.defendEast -= priorPower;
+				break;
+			case "South":
+				power -= ts.defendSouth;
+				ts.defendSouth -= priorPower;
+				break;
+			case "Up":
+				power -= ts.defendCeiling;
+				ts.defendCeiling -= priorPower;
+				break;
+			case "Down":
+				power -= ts.defendFloor;
+				ts.defendFloor -= priorPower;
+				break;
 		}
 
-		map.GeneratePathTo(targetX, targetY, targetZ);
+		if (priorPower != power)
+			foreach (CharacterStats defender in ts.defenders.Keys)
+				if (ts.defenders[defender] == direction)
+					defender.freeShots++;
 
-		map.selectedUnit = prevUnit;
-		basics.CheckPath();
+		Debug.Log("ThruWall");
 	}
 
 	public void ShotClear()
@@ -88,19 +107,21 @@ public class ShotScript : MonoBehaviour
 		}
 
 		basics.CheckPath();
+		Debug.Log("ShotClr");
 	}
 
 	void CheckHit(MapMaker.Node currentSpace, int index)
 	{
 		// If the shot his a wall lose 1 power
 		TileScript currentTile = map.GetTileFromNode(currentSpace);
-		if (currentSpace.x < basics.plannedPath[index + 1].x && !currentTile.eastViable||
+		if (currentSpace.x < basics.plannedPath[index + 1].x && !currentTile.eastViable ||
 			currentSpace.x > basics.plannedPath[index + 1].x && !currentTile.westViable ||
 			currentSpace.y < basics.plannedPath[index + 1].y && !currentTile.ceiling ||
 			currentSpace.y > basics.plannedPath[index + 1].y && !currentTile.floor ||
 			currentSpace.z < basics.plannedPath[index + 1].z && !currentTile.northViable ||
 			currentSpace.z > basics.plannedPath[index + 1].z && !currentTile.southViable)
 			power--;
+		Debug.Log("CheckHit");
 	}
 
 	public void Impact(CharacterStats character, float percent, bool canBeCrit) // Deal damage
@@ -117,15 +138,13 @@ public class ShotScript : MonoBehaviour
 				character.DamageCharacter(damage, CharacterStats.DamageTypes.Shot, 0, owner.GetComponent<CharacterStats>());
 		else
 			character.DamageCharacter(damage, CharacterStats.DamageTypes.Shot, 0, owner.GetComponent<CharacterStats>());
+		Debug.Log("Impact");
 	}
 
 	public void AfterTurn()
 	{
 		set = true;
-		basics.ClearLastShotMove();
-		basics.shortPath.Clear();
-		if (target != null)
-			Hunter();
 		basics.CheckPath();
+		Debug.Log("AfterTurn");
 	}
 }

@@ -1,6 +1,12 @@
 Map Size: X Y Z
 10 3 10
 
+Camera Rotations:
+SW: 40 45 0
+SE: 40 315 0
+NE: 40 225 0
+NW: 40 135 0
+
 Map Specs (i.e. walls, corners, etc): X Y Z | Type | TilePreset
 (Remember the first row is 0 for each variable and the last row is the map size -1) DO NOT DELETE ANY NOTES
 3 0 5 | 8 | temp

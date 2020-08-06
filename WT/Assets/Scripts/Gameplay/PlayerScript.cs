@@ -12,6 +12,11 @@ public class PlayerScript : NetworkBehaviour
 	public MapMaker map;
 	public ManagementScript gm;
 	public List<GameObject> units, team;
+	public List<MapMaker.Node> visibleTiles = new List<MapMaker.Node>();
+	public Dictionary<CharacterStats, int> markedCharachters = new Dictionary<CharacterStats, int>();
+
+	[SyncVar]
+	public string highlighted;
 
 	private void Start()
 	{
@@ -31,14 +36,19 @@ public class PlayerScript : NetworkBehaviour
 	}
 
 	[ClientRpc]
-	public void RpcEditTeam(GameObject character)
+	public void RpcEditTeam()
 	{
+		GameObject character = null;
+		foreach (GameObject ch in FindObjectOfType<PreGameScript>().availableCharacters)
+			if (ch.name == highlighted)
+				character = ch;
+
 		if (team.Contains(character))
 			team.Remove(character);
 		else
 			team.Add(character);
 	}
-	 
+
 	public void FillPlayerBlanks()
 	{
 		if (pName == null)
@@ -70,8 +80,6 @@ public class PlayerScript : NetworkBehaviour
 			unit.GetComponent<UnitBasics>().tileZ = (int)unit.transform.position.z;
 
 			NetworkServer.Spawn(unit);
-			Debug.Log("Spawn");
-
 		}
 	}
 
@@ -93,6 +101,11 @@ public class PlayerScript : NetworkBehaviour
 			if (!CheckFour() || team.Count > 4)
 				team.Remove(team[0]);
 
+	}
+
+	public void Spawn(GameObject go)
+	{
+		NetworkServer.Spawn(go);
 	}
 
 	public void PlayerEndTurn()
@@ -118,6 +131,13 @@ public class PlayerScript : NetworkBehaviour
 			while (unit.GetComponent<CharacterStats>().defendingTiles.Count > 0)
 				unit.GetComponent<CharacterStats>().StopBlocking();
 		}
+
+		foreach (CharacterStats character in markedCharachters.Keys)
+		{
+			markedCharachters[character]--;
+			if (markedCharachters[character] <= 0)
+				markedCharachters.Remove(character);
+		}
 	}
 
 	bool CheckFour()
@@ -132,5 +152,20 @@ public class PlayerScript : NetworkBehaviour
 			return true;
 		else
 			return false;
+	}
+
+	public void CheckVisibility()
+	{
+		foreach (CharacterStats character in markedCharachters.Keys)
+			map.GetTileFromNode(map.graph[character.basics.tileX,
+									character.basics.tileY,
+									character.basics.tileZ]).inView = true;
+
+		foreach (UnitBasics unit in FindObjectsOfType<UnitBasics>())
+			if (!units.Contains(unit.gameObject))
+				if (map.GetTileFromNode(map.graph[unit.tileX, unit.tileY, unit.tileZ]).inView)
+					Debug.Log("I can see " + unit.gameObject.name);
+				else
+					Debug.Log("I can't see " + unit.gameObject.name);
 	}
 }

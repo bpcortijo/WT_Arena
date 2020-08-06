@@ -12,21 +12,25 @@ public class CharacterStats : MonoBehaviour
 	public int speed, health, shot, ammo, defence = 2;
 
 	//Perks
-	public bool quickstep = false, sprinter = false, disengagement = false, trust = false, fours = false;
+	public bool fours = false, trust = false, quickstep = false, leadingShot = false, spare = false,
+				sprint = false, disengage = false, energyRepurpse = false, recon = false,
+				slowShot = false, longShot = false, meleeMaster = false, turtle = false;
 
 	[HideInInspector]
 	public UnitBasics basics;
 	[HideInInspector]
 	public int movementActions = 2;
-//	[HideInInspector]
+	//[HideInInspector]
 	public List<string> actions = new List<string>();
 
 	public int disabled = 0;
+	public GameObject shotType;
 	public List<string> loadout;
-	public GameObject[] shotTypes;
-	public int agility = 1, energy = 1, experience = 1;
-	public bool attacking = false, reloading = false, defending = false, severed=false;
+	//Stats
+	public int agility = 1, energy = 1, experience = 1, vision = 0;
+	public bool attacking = false, reloading = false, defending = false, severed = false;
 
+	public bool canHit;
 	public MapMaker.Node meleeThis;
 	List<GameObject> shooting = new List<GameObject>();
 	public List<string> defendingDirections = new List<string>();
@@ -38,7 +42,12 @@ public class CharacterStats : MonoBehaviour
 	public TileScript selectedTile = null;
 
 	public enum CritFX { Bleed, Sever, True }
-	public enum DamageTypes { Shot, Slashed, Bleed }
+	public enum DamageTypes { Shot, Slashed, Bleed, Choked }
+
+	//Statuses
+	public bool wrapped = false, stunned = false;
+
+	public int freeShots = 0;
 
 	void Start()
 	{
@@ -48,7 +57,21 @@ public class CharacterStats : MonoBehaviour
 		health = energy * 15;
 		basics = gameObject.GetComponent<UnitBasics>();
 		basics.speed = speed;
-		basics.vector = true;
+
+		vision = experience;
+		if (loadout.Contains("pistol"))
+			vision += 5;
+		else if (loadout.Contains("sniper"))
+			vision += 8;
+		//else if (loadout.Contains("shotgun"))
+		//	vision += 4;
+
+		if (turtle)
+			defence = 1;
+		if (fours)
+			trust = true;
+		if (spare)
+			freeShots++;
 
 		foreach (GameObject p in FindObjectOfType<ManagementScript>().players)
 			if (basics.playerNum == p.GetComponent<PlayerScript>().num)
@@ -63,75 +86,42 @@ public class CharacterStats : MonoBehaviour
 	{
 		if (basics.map.selectedUnit == gameObject && basics.LocalCheck() && player.isLocalPlayer)
 		{
-			//applies to all reloads except 4shot aka pistol
-			if (reloading)
+			if (movementActions > 0)
 			{
-				if (Input.GetKeyUp(KeyCode.Alpha1))
+				if (!wrapped)
 				{
-					Reload(0);
-					reloading = false;
-				}
-					if (Input.GetKeyUp(KeyCode.Alpha2)) { }
-				{
-					Reload(1);
-					reloading = false;
-				}
-				if (Input.GetKeyUp(KeyCode.Alpha3)) { }
-				{
-					Reload(2);
-					reloading = false;
-				}
-				if (Input.GetKeyUp(KeyCode.Alpha4)) { }
-				{
-					Reload(3);
-					reloading = false;
-				}
-			}
-			else if (movementActions > 0)
-			{
-				if (Input.GetKeyUp(KeyCode.S))
-					if (Input.GetKey(KeyCode.LeftShift) && disabled <= 0)
-					{
-						if (loadout.Contains("SMG"))
-							SuperSubShot();
-						if (loadout.Contains("AR"))
-							SuperRifleShot();
-						if (loadout.Contains("4shot"))
-							SuperPistolShot();
-						if (loadout.Contains("Sniper"))
-							SuperSniperShot();
-						if (loadout.Contains("Shotgun"))
-							SuperShotgunShot();
+					if (Input.GetKeyUp(KeyCode.S))
+						CockTrigger(shotType, 10, 10, 10);
+					//if (Input.GetKey(KeyCode.LeftShift) && disabled <= 0)
+					//{
+					//	if (loadout.Contains("pistol"))
+					//		SuperPistolShot();
+					//	if (loadout.Contains("sniper"))
+					//		SuperSniperShot();
+					//	if (loadout.Contains("shotgun"))
+					//		SuperShotgunShot();
 
-						actions.Add("Shoot");
-					}
-					else
-					{
-						if (loadout.Contains("SMG"))
-							SubShot();
-						if (loadout.Contains("AR"))
-							RifleShot();
-						if (loadout.Contains("4shot"))
-							PistolShot();
-						if (loadout.Contains("Sniper"))
-							SniperShot();
-						if (loadout.Contains("Shotgun"))
-							ShotgunShot();
-						actions.Add("Shoot");
-					}
+					//	actions.Add("Shoot");
+					//}
+					//else
+					//{
+					//	if (loadout.Contains("pistol"))
+					//		PistolShot();
+					//	if (loadout.Contains("sniper"))
+					//		SniperShot();
+					//	if (loadout.Contains("shotgun"))
+					//		ShotgunShot();
+					//	actions.Add("Shoot");
+					//}
+
+					if (Input.GetKeyUp(KeyCode.A))
+						if (!attacking)
+							attacking = true;
+				}
 
 				if (Input.GetKeyUp(KeyCode.R))
-				{
-					actions.Add("Reload");
-					if (loadout.Contains("4shot"))
-						Reload(0);
-					else
-						reloading = true;
-				}
+					Reload();
 
-				if (Input.GetKeyUp(KeyCode.A))
-					if (!attacking)
-						attacking = true;
 			}
 
 			if (Input.GetKeyUp(KeyCode.D))
@@ -158,6 +148,7 @@ public class CharacterStats : MonoBehaviour
 	public void AfterTurnReset()
 	{
 		defending = false;
+		wrapped = false;
 
 		foreach (CharacterStats bleedTick in bleedCausers)
 			DamageCharacter(4, DamageTypes.Bleed, 0, bleedTick);
@@ -166,7 +157,7 @@ public class CharacterStats : MonoBehaviour
 		basics.nextBonus = 0;
 		movementActions = 2;
 
-		basics.full = false;
+		basics.fullPath = false;
 		basics.keyPoints.Clear();
 		basics.shortPath.Clear();
 		basics.plannedPath.Clear();
@@ -179,29 +170,58 @@ public class CharacterStats : MonoBehaviour
 		basics.CheckPath();
 	}
 
-	void MeleeAttack(MapMaker.Node node)
+	void SpotAttack(MapMaker.Node node)
 	{
-		// if end of movement melee +2 power
-		int startDist = basics.map.Distance(basics.map.graph[basics.tileX, basics.tileY, basics.tileZ], node);
-		// int endDist = basics.map.Distance(basics.shortPath[basics.shortPath.Count-1], node);
+		actions.Add("meleeFirst");
+		meleeThis = node;
+		attacking = false;
+	}
 
-		if (startDist == 1)
-		{
-			actions.Add("meleeFirst");
-			meleeThis = node;
-			attacking = false;
-		}
+	public void CheckMelee()
+	{
+		if (loadout.Contains("sword"))
+			if (basics.map.Distance(basics.map.graph[basics.tileX, basics.tileY, basics.tileZ], meleeThis) == 1)
+				foreach (CharacterStats ch in basics.map.characterPaths)
+					if (basics.map.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ] == meleeThis)
+						if (meleeMaster)
+							DamageCharacter(8, DamageTypes.Slashed, 2, this);
+						else
+							DamageCharacter(8, DamageTypes.Slashed, 1, this);
+
+		if (loadout.Contains("wire"))
+			if (basics.map.Distance(basics.map.graph[basics.tileX, basics.tileY, basics.tileZ], meleeThis) == 1)
+				foreach (CharacterStats ch in basics.map.characterPaths)
+					if (basics.map.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ] == meleeThis)
+						if (meleeMaster)
+							DamageCharacter(2, DamageTypes.Choked, 1, this);
+						else
+							DamageCharacter(2, DamageTypes.Choked, 0, this);
+
+		if (loadout.Contains("dagger"))
+			foreach (CharacterStats ch in basics.map.characterPaths)
+				if (basics.map.Distance(basics.map.graph[basics.tileX, basics.tileY, basics.tileZ],
+					basics.map.graph[ch.basics.tileX, ch.basics.tileY, ch.basics.tileZ]) == 1)
+					if (meleeMaster)
+						DamageCharacter(4, DamageTypes.Slashed, 1, this);
+					else
+						DamageCharacter(4, DamageTypes.Slashed, 0, this);
 	}
 
 	void PistolShot()
 	{
 		shot++;
-		if (shot >= 4)
-			shot = 0;
 		movementActions--;
+		int range = 5;
+		if (longShot)
+			range *= 2;
+
+
 		if (ammo > 0)
 		{
-			CockTrigger(shotTypes[shot % 4], shotTypes[shot % 4].name, 4, 2, 4);
+			if (slowShot)
+				CockTrigger(shotType, 1, 2, range);
+			else
+				CockTrigger(shotType, 4, 2, range);
 			ammo--;
 		}
 		else
@@ -210,56 +230,36 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperPistolShot()
 	{
-		if (health > Mathf.Pow(2, 3))
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 3, 6);
-	}
-
-	void SubShot()
-	{
 		movementActions--;
-		if (ammo > 0)
-		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 2, 6);
-			ammo--;
-		}
-		else
-			Debug.Log("Out of Ammo");
-	}
+		int range = 6, power = 3;
+		if (longShot)
+			range *= 2;
 
-	void SuperSubShot()
-	{
-		if (health > 9)
+		if (freeShots > 0)
 		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 1, 6);
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 1, 6);
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 6, 1, 6);
+			CockTrigger(shotType, 6, power, range);
+			freeShots--;
 		}
-	}
-
-	void RifleShot()
-	{
-		movementActions--;
-		if (ammo > 0)
+		else if (health > power * 2)
 		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 4, 3, 8);
-			ammo--;
+			CockTrigger(shotType, 6, power, range);
+			health -= power * 2;
 		}
-		else
-			Debug.Log("Out of Ammo");
-	}
-
-	void SuperRifleShot()
-	{
-		if (health > Mathf.Pow(2, 4))
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 5, 3, 10);
 	}
 
 	void ShotgunShot()
 	{
 		movementActions--;
+		int range = 4;
+		if (longShot)
+			range *= 2;
+
 		if (ammo > 0)
 		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 2, 4, 4);
+			if (slowShot)
+				CockTrigger(shotType, 1, 3, range);
+			else
+				CockTrigger(shotType, 2, 3, range);
 			ammo--;
 		}
 		else
@@ -268,16 +268,36 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperShotgunShot()
 	{
-		if (health > Mathf.Pow(2, 4))
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 4, 4, 4);
+		movementActions--;
+		int range = 4, power = 3;
+		if (longShot)
+			range *= 2;
+
+		if (freeShots > 0)
+		{
+			CockTrigger(shotType, 4, power, range);
+			freeShots--;
+		}
+		else if (health > power * 2)
+		{
+			CockTrigger(shotType, 4, power, range);
+			health -= power * 2;
+		}
 	}
 
 	void SniperShot()
 	{
 		movementActions--;
+		int range = 8;
+		if (longShot)
+			range *= 2;
+
 		if (ammo > 0)
 		{
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 5, 3, 15);
+			if (slowShot)
+				CockTrigger(shotType,  1, 3, range);
+			else
+				CockTrigger(shotType, 4, 3, range);
 			ammo--;
 		}
 		else
@@ -286,52 +306,42 @@ public class CharacterStats : MonoBehaviour
 
 	void SuperSniperShot()
 	{
-		if (health > Mathf.Pow(2, 5))
-			CockTrigger(shotTypes[shot], shotTypes[shot].name, 15, 4, 15);
+		movementActions--;
+		int range = 8, power = 4;
+		if (longShot)
+			range *= 2;
+
+		if (freeShots > 0)
+		{
+			CockTrigger(shotType, 8, power, range);
+			freeShots--;
+		}
+		else if (health > power * 2)
+		{
+			CockTrigger(shotType, 8, power, range);
+			health -= power * 2;
+		}
 	}
 
-	void Reload(int shotType)
+	void Reload()
 	{
-		if (loadout.Contains("4shot"))
-		{
-			movementActions--;
+		movementActions--;
+		actions.Add("Reload");
+
+		if (loadout.Contains("pistol"))
 			ammo = 4;
-			shot = Random.Range(0,3);
-		}
 
-		if (loadout.Contains("AR"))
-		{
-			movementActions--;
-			ammo = 8;
-			shot = shotType;
-		}
-
-		if (loadout.Contains("SMG"))
-		{
-			movementActions--;
-			ammo = 6;
-			shot = shotType;
-		}
-
-		if (loadout.Contains("Shotgun"))
-		{
-			movementActions--;
-			ammo = 2;
-			shot = shotType;
-		}
-
-		if (loadout.Contains("Sniper"))
-		{
-			movementActions--;
+		if (loadout.Contains("sniper"))
 			ammo = 1;
-			shot = shotType;
-		}
 
 		actions.Add("Reload");
-	}
+	} 
 
-	void CockTrigger(GameObject shotType, string attackName, int speed, int power, int range)
+	void CockTrigger(GameObject shotType, int speed, int power, int range)
 	{
+		if (longShot)
+			range *= 2;
+
 		Vector3 adjustedPos = new Vector3(transform.position.x, 
 											transform.position.y + basics.unitHeight, 
 											transform.position.z);
@@ -341,9 +351,6 @@ public class CharacterStats : MonoBehaviour
 		shot.transform.localScale = new Vector3(.25f, .25f, .25f);
 		ShotScript ss = shot.GetComponent<ShotScript>();
 		ss.player = player;
-
-		if (shotType.name == "Strong")
-			power += 1;
 
 		ss.speed = speed;
 		ss.power = power;
@@ -357,7 +364,7 @@ public class CharacterStats : MonoBehaviour
 		shot.GetComponent<UnitBasics>().tileY = basics.tileY;
 		shot.GetComponent<UnitBasics>().tileZ = basics.tileZ;
 
-		shot.name = attackName;
+		shot.name = "Vector";
 		shooting.Add(shot);
 		basics.CheckPath();
 	}
@@ -374,30 +381,51 @@ public class CharacterStats : MonoBehaviour
 		defendingTiles.Add(selectedTile);
 		defendingDirections.Add(direction);
 
+		if (energyRepurpse)
+			selectedTile.defenders.Add(this, direction);
+
 		switch (direction)
 		{
 			case "North":
-				selectedTile.defendNorth++;
+				if (turtle)
+				selectedTile.defendNorth+=3;
+				else
+					selectedTile.defendNorth++;
 				selectedTile.CreateVisualShields(direction);
 				break;
 			case "West":
-				selectedTile.defendWest++;
+				if (turtle)
+					selectedTile.defendWest += 3;
+				else
+					selectedTile.defendWest++;
 				selectedTile.CreateVisualShields(direction);
 				break;
 			case "East":
-				selectedTile.defendEast++;
+				if (turtle)
+					selectedTile.defendEast += 3;
+				else
+					selectedTile.defendEast++;
 				selectedTile.CreateVisualShields(direction);
 				break;
 			case "South":
-				selectedTile.defendSouth++;
+				if (turtle)
+					selectedTile.defendSouth += 3;
+				else
+					selectedTile.defendSouth++;
 				selectedTile.CreateVisualShields(direction);
 				break;
 			case "Up":
-				selectedTile.defendCeiling++;
+				if (turtle)
+					selectedTile.defendCeiling += 3;
+				else
+					selectedTile.defendCeiling++;
 				selectedTile.CreateVisualShields(direction);
 				break;
 			case "Down":
-				selectedTile.defendFloor++;
+				if (turtle)
+					selectedTile.defendFloor += 3;
+				else
+					selectedTile.defendFloor++;
 				selectedTile.CreateVisualShields(direction);
 				break;
 			default:
@@ -472,7 +500,7 @@ public class CharacterStats : MonoBehaviour
 
 			if (act == "Shoot")
 			{
-				if (loadout.Contains("4shot"))
+				if (loadout.Contains("pistol"))
 					shot--;
 
 				if (shot <= 0)
@@ -537,15 +565,22 @@ public class CharacterStats : MonoBehaviour
 				break;
 		}
 
-		if (damageType == DamageTypes.Slashed && disengagement)
+		if (damageType == DamageTypes.Slashed && disengage)
 			basics.nextBonus += 3;
 
 		if (damageDealer != null)
+		{
 			if (!damageTracker.ContainsKey(damageDealer))
 				damageTracker.Add(damageDealer, damage);
 			else
 				damageTracker[damageDealer] += damage;
 
+			if (damageDealer.recon)
+				if (damageDealer.player.markedCharachters.ContainsKey(this))
+					damageDealer.player.markedCharachters[this] = 3;
+				else
+					damageDealer.player.markedCharachters.Add(this, 3);
+		}
 		health -= damage;
 		if (health <= 0)
 			Die(damageType);
@@ -553,6 +588,10 @@ public class CharacterStats : MonoBehaviour
 
 	void Die(DamageTypes causeOfDeath)
 	{
+		foreach (PlayerScript player in FindObjectsOfType<PlayerScript>())
+			if (player.markedCharachters.ContainsKey(this))
+				player.markedCharachters.Remove(this);
+
 		Destroy(gameObject);
 	}
 }

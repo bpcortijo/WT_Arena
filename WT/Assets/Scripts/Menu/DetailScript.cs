@@ -51,30 +51,23 @@ public class DetailScript : MonoBehaviour
 
 	void EditDetails()
 	{
-		if (localPlayer.team.Contains(currentCharacter))
-			selectLocalTeam.text = "Remove from Team 1";
-		else
-			selectLocalTeam.text = "Add to Team 1";
-
-		/*if (P2.characters.Contains(currentCharacter))
-		{
-			P2has = true;
-			select.text = "Remove from Team 2";
-		}
-		else
-		{
-			P2has = false;
-			select.text = "Add to Team 2";
-		}*/
-
 		cName.text = "Name: " + currentCharacter.name;
 		cAge.text = "Age: " + currentCharacter.GetComponent<CharacterStats>().age;
 	}
 
 	public void EditLocalTeam()
 	{
-		localPlayer.RpcEditTeam(currentCharacter);
+		localPlayer.highlighted = currentCharacter.name;
+		localPlayer.RpcEditTeam();
 		teamPage.UpdateLocalTeam();
-		EditDetails();
+	}
+
+	private void Update()
+	{
+		if (localPlayer != null)
+			if (localPlayer.team.Contains(currentCharacter))
+				selectLocalTeam.text = "Remove from Team 1";
+			else
+				selectLocalTeam.text = "Add to Team 1";
 	}
 }
