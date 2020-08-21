@@ -44,6 +44,9 @@ public class MapMaker : NetworkBehaviour
 			player.map = this;
 			player.SpawnTeam();
 		}
+
+		if (gm == null)
+			gm = FindObjectOfType<ManagementScript>();
 	}
 
 	CameraScript CameraAction()

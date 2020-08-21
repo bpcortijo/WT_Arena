@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Networking;
-using System.Collections.Generic;
 
 public class UnitBasics : NetworkBehaviour {
 	GameObject visibleShortPath, visiblePlannedPath;
@@ -26,12 +26,16 @@ public class UnitBasics : NetworkBehaviour {
 
 	public List<MapMaker.Node> fov = new List<MapMaker.Node>();
 
+	float moveTime = 0;
+	public float timePerMove;
 	public LayerMask tileMask;
+
+	[SyncVar]
+	public float tpm;
 
 	private void Start()
 	{
-		if (gameObject.GetComponent<CharacterStats>() != null)
-			CharacterSetCurrentSpace(map.graph[tileX, tileY, tileZ], GetComponent<CharacterStats>());
+		map = FindObjectOfType<MapMaker>();
 	}
 
 	public void CheckPath()
@@ -182,92 +186,76 @@ public class UnitBasics : NetworkBehaviour {
 		//	AdjustFOV();
 	}
 
-	public void Move(float timePast)
+	private void Update()
 	{
-		Debug.Log(name + shortPath.Count);
-		int space = Mathf.CeilToInt(timePast / lerpTimePerSpace);
-		if (space < shortPath.Count && shortPath[space] != currentSpace)
+		if (FindObjectOfType<ManagementScript>().playResults)
+			moveTime += Time.deltaTime;
+
+		if (moveTime >= timePerMove&& shortPath.IndexOf(map.graph[tileX, tileY, tileZ])+1<shortPath.Count)
+		{
 			if (GetComponent<CharacterStats>() != null)
-			{
-				CharacterSetCurrentSpace(shortPath[space], GetComponent<CharacterStats>());
+				NextStep(shortPath[shortPath.IndexOf(map.graph[tileX, tileY, tileZ]) + 1]);
+			else
+				NextStep(shortPath[shortPath.IndexOf(map.graph[tileX, tileY, tileZ])+1]);
 
-				transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, true);
-				if (GetComponent<CharacterStats>().canHit)
-					GetComponent<CharacterStats>().CheckMelee();
-			}
-			else if (GetComponent<ShotScript>() != null)
-			{
-				ShotSetCurrentSpace(shortPath[space], GetComponent<ShotScript>());
-
-				transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, false);
-			}
+			moveTime -= timePerMove;
+		}
 	}
 
-	void CharacterSetCurrentSpace(MapMaker.Node nextStep, CharacterStats me)
+	void NextStep(MapMaker.Node nextStep)
 	{
-		if (CheckAllPositions())
+		if (GetComponent<CharacterStats>()!=null&& IsPositionOccupied(nextStep))
 		{
-			currentSpace = nextStep;
-
-			foreach (ShotScript shot in map.attackPaths)
-				if (shot.basics.currentSpace == currentSpace)
-					if (shot.player.transform != transform.parent || !shot.owner.GetComponent<CharacterStats>().trust && !me.trust)
-						if(shot.owner.GetComponent<CharacterStats>().leadingShot)
-							shot.Impact(me, shortPath.IndexOf(currentSpace) + 2 / shortPath.Count, false);
-						else
-							shot.Impact(me, shortPath.IndexOf(currentSpace) + 1 / shortPath.Count, false);
-			tileX = currentSpace.x;
-			tileY = currentSpace.y;
-			tileZ = currentSpace.z;
-			AdjustFOV();
+			Debug.Log(name + " tried to step on to (" + nextStep.x + "," + nextStep.y + "," + nextStep.z + ")");
+			while (shortPath.Count > shortPath.IndexOf(currentSpace))
+				shortPath.RemoveAt(shortPath.Count - 1);
 		}
 		else
 		{
-			Debug.Log(name + " tried to step on to (" + nextStep.x + "," + nextStep.y + "," + nextStep.z + ")");
-			while (shortPath.Count > shortPath.IndexOf(currentSpace) + 1)
-				shortPath.RemoveAt(shortPath.Count - 1);
+			RpcMoveUnit(nextStep.x, nextStep.y, nextStep.z);				
+			AdjustFOV();
 		}
 	}
 
-	bool CheckAllPositions()
+	[ClientRpc]
+	void RpcMoveUnit(int x, int y, int z)
+	{
+		tileX = x;
+		tileY = y;
+		tileZ = z;
+
+		if (GetComponent<CharacterStats>() != null)
+			transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, true);
+		else
+			transform.position = map.TileCoordToWorldCoord(tileX, tileY, tileZ, false);
+	}
+
+	bool IsPositionOccupied(MapMaker.Node step)
 	{
 		CharacterStats[] characters = FindObjectsOfType<CharacterStats>();
 		foreach (CharacterStats character in characters)
 			if (character.gameObject != gameObject)
-				if (character.basics.tileX != tileX || character.basics.tileY != tileY || character.basics.tileZ != tileZ)
+				if (character.basics.tileX == step.x && character.basics.tileY == step.y && character.basics.tileZ == step.z)
 					return true;
 		return false;
 	}
 
-	void ShotSetCurrentSpace(MapMaker.Node nextStep, ShotScript myBullet)
+	[TargetRpc]
+	public void TargetTimeToReach(NetworkConnection target, int x, int y, int z, int index)
 	{
-		ShotScript thisShot = GetComponent<ShotScript>();
-		currentSpace = nextStep;
+		MapMaker.Node node = map.graph[x, y, z];
 
-		foreach (ShotScript shot in map.attackPaths)
-			if (shot.owner.transform.parent != myBullet.owner.transform.parent
-					&& shot.basics.currentSpace == currentSpace)
-				Debug.Log("Shot out of the air");
-		foreach (CharacterStats character in map.characterPaths)
-			if (character.basics.currentSpace == currentSpace)
-				if (character.transform.parent != myBullet.player.transform || !character.trust && !thisShot.owner.GetComponent<CharacterStats>().trust)
-				{
-					if (character.basics.shortPath.IndexOf(currentSpace) != 0 || !character.quickstep)
-						if (thisShot.owner.GetComponent<CharacterStats>().leadingShot)
-							myBullet.Impact(character,
-								character.basics.shortPath.IndexOf(currentSpace) + 2 / character.basics.shortPath.Count,
-								false);
-						else
-							myBullet.Impact(character,
-								character.basics.shortPath.IndexOf(currentSpace) + 1 / character.basics.shortPath.Count,
-								false);
-				}
-				else
-					Debug.Log("Trust");
+		if (shortPath.Contains(node))
+			tpm = timePerMove * shortPath.IndexOf(node) / index;
+		else
+			tpm = float.MaxValue;
+	}
 
-		tileX = currentSpace.x;
-		tileY = currentSpace.y;
-		tileZ = currentSpace.z;
+	[TargetRpc]
+	public void TargetRecieveTPM(NetworkConnection target, float f)
+	{
+		if (timePerMove > f)
+			timePerMove = f;
 	}
 
 	public void ClearLastShotMove()
@@ -297,32 +285,38 @@ public class UnitBasics : NetworkBehaviour {
 
 	public void AdjustFOV()
 	{
-		CharacterStats ch = GetComponent<CharacterStats>();
+		if (GetComponent<CharacterStats>() != null)
+		{
+			int vision = GetComponent<CharacterStats>().vision;
 
-		List<MapMaker.Node> vision = new List<MapMaker.Node>();
-		for (int x = tileX - ch.vision; x <= tileX + ch.vision; x++)
-			if (x >= 0 && x < map.mapSizeX)
-				for (int y = tileY - ch.vision; y <= tileY + ch.vision; y++)
-					if (y >= 0 && y < map.mapSizeY)
-						for (int z = tileZ - ch.vision; z <= tileZ + ch.vision; z++)
-							if (z >= 0 && z < map.mapSizeZ)
-								if (PerceptionCheck(map.graph[x, y, z]))
-								{
-									vision.Add(map.graph[x, y, z]);
-									map.GetTileFromNode(map.graph[x, y, z]).inView = true;
-								}
+			List<MapMaker.Node> visionArea = new List<MapMaker.Node>();
+			for (int x = tileX - vision; x <= tileX + vision; x++)
+				if (x >= 0 && x < map.mapSizeX)
+					for (int y = tileY - vision; y <= tileY + vision; y++)
+						if (y >= 0 && y < map.mapSizeY)
+							for (int z = tileZ - vision; z <= tileZ + vision; z++)
+								if (z >= 0 && z < map.mapSizeZ)
+									if (PerceptionCheck(map.graph[x, y, z]))
+									{
+										visionArea.Add(map.graph[x, y, z]);
+										map.GetTileFromNode(map.graph[x, y, z]).inView = true;
+									}
 
-		List<MapMaker.Node> temp = new List<MapMaker.Node>();
-		foreach (MapMaker.Node node in fov)
-			if (!vision.Contains(node))
-				temp.Add(node);
+			List<MapMaker.Node> temp = new List<MapMaker.Node>();
+			foreach (MapMaker.Node node in fov)
+				if (!visionArea.Contains(node))
+					temp.Add(node);
 
-		fov = vision;
+			fov = visionArea;
 
-		foreach (MapMaker.Node node in temp)
-			map.GetTileFromNode(node).CheckView();
+			foreach (MapMaker.Node node in temp)
+				map.GetTileFromNode(node).CheckView();
+		}
 
-		ch.player.CheckVisibility();
+		if (GetComponent<ShotScript>()!=null)
+			GetComponent<ShotScript>().player.CheckVisibility();
+		else 
+			GetComponent<CharacterStats>().player.CheckVisibility();
 	}
 
 	public bool PerceptionCheck(MapMaker.Node node)

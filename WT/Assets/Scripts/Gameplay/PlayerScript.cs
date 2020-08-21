@@ -158,8 +158,14 @@ public class PlayerScript : NetworkBehaviour
 	{
 		foreach (CharacterStats character in markedCharachters.Keys)
 			map.GetTileFromNode(map.graph[character.basics.tileX,
-									character.basics.tileY,
-									character.basics.tileZ]).inView = true;
+											character.basics.tileY,
+											character.basics.tileZ]).inView = true;
+
+		foreach (ShotScript shot in FindObjectsOfType<ShotScript>())
+			if (shot.player==this)
+				map.GetTileFromNode(map.graph[shot.basics.tileX,
+												shot.basics.tileY,
+												shot.basics.tileZ]).inView = true;
 
 		foreach (UnitBasics unit in FindObjectsOfType<UnitBasics>())
 			if (!units.Contains(unit.gameObject))

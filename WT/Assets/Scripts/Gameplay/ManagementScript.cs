@@ -19,6 +19,7 @@ public class ManagementScript : NetworkBehaviour {
 	[SyncVar]
 	public int turn = 1, maxTurns = 60, endTurnRequests = 0;
 
+
 	public void GameStart()
 	{
 		foreach (PlayerScript player in FindObjectsOfType<PlayerScript>())
@@ -39,10 +40,13 @@ public class ManagementScript : NetworkBehaviour {
 				map = Instantiate(map);
 				mapCode = map.GetComponent<MapMaker>();
 				mapCode.gm = this;
-				foreach (GameObject player in players)
+				foreach (PlayerScript player in FindObjectsOfType<PlayerScript>())
 				{
+					if (!players.Contains(player.gameObject))
+						players.Add(player.gameObject);
+
 					player.GetComponent<PlayerScript>().map = mapCode;
-					player.GetComponent<PlayerScript>().num = players.IndexOf(player);
+					player.GetComponent<PlayerScript>().num = players.IndexOf(player.gameObject);
 				}
 				NetworkServer.Spawn(map);
 
@@ -82,39 +86,49 @@ public class ManagementScript : NetworkBehaviour {
 		if (endTurnRequests == players.Count && endTurnRequests != 0 || turnTime <= 0)
 			if (!playResults)
 				TurnResults();
-			
-
-		if (playResults)
-		{
-			foreach (CharacterStats ch in mapCode.characterPaths)
-				if (ch.basics.shortPath.Count > 0 &&ch.basics.hasAuthority)
-					ch.basics.Move(resultsTime);
-			foreach (ShotScript atk in mapCode.attackPaths)
-				if (atk.basics.hasAuthority)
-					atk.basics.Move(resultsTime);
-		}
 	}
 
 	void TurnResults()
 	{
-		GetAttackPaths();
-		GetCharacterPaths();
-		mapCode.GetAttackPaths();
-		foreach (CharacterStats ch in mapCode.characterPaths)
-		{
-			ch.basics.ReMapMovement();
-			ch.basics.SetPosition(resultsTimer);
-			ch.basics.DrawLines();
-			for (int i=0; i<ch.defendingTiles.Count; i++)
-				RpcSendDef(ch.defendingTiles[i].name,ch.defendingDirections[i]);
-		}
+		//GetAttackPaths();
+		//GetCharacterPaths();
+		//mapCode.GetAttackPaths();
+		//foreach (CharacterStats ch in mapCode.characterPaths)
+		//{
+		//	ch.basics.ReMapMovement();
+		//	ch.basics.SetPosition(resultsTimer);
+		//	ch.basics.DrawLines();
+		//	for (int i=0; i<ch.defendingTiles.Count; i++)
+		//		RpcSendDef(ch.defendingTiles[i].name,ch.defendingDirections[i]);
+		//}
 
-		foreach (ShotScript atk in mapCode.attackPaths)
-		{
-			atk.basics.ReMapMovement();
-			atk.basics.SetPosition(resultsTimer);
-			atk.basics.DrawLines();
-		}
+		//foreach (ShotScript atk in mapCode.attackPaths)
+		//{
+		//	atk.basics.ReMapMovement();
+		//	atk.basics.SetPosition(resultsTimer);
+		//	atk.basics.DrawLines();
+		//}
+
+
+		//List<ShotScript> shots = new List<ShotScript>(FindObjectsOfType<ShotScript>());
+		//foreach (ShotScript shot in shots)
+		//{
+		//	if (shot.player == localPlayer)
+		//		foreach (MapMaker.Node node in shot.basics.shortPath)
+		//			foreach (CharacterStats character in FindObjectsOfType<CharacterStats>())
+		//				if (character.player != shot.player)
+		//				{
+		//					character.basics.TargetTimeToReach(connectionToClient,
+		//														node.x,
+		//														node.y,
+		//														node.z,
+		//														shot.basics.shortPath.IndexOf(node)
+		//														);
+
+		//					shot.basics.TargetRecieveTPM(connectionToClient, character.basics.tpm);
+		//				}
+		//	Debug.Log(shot.basics.timePerMove);
+		//}
 
 		playResults = true;
 	}

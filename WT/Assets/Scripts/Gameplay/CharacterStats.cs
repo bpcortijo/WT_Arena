@@ -79,11 +79,14 @@ public class CharacterStats : MonoBehaviour
 
 		transform.parent = player.transform;
 		player.units.Add(gameObject);
+
+		basics.timePerMove = FindObjectOfType<ManagementScript>().resultsTimer / speed;
 	}
 
 	// Update is called once per frame
 	void Update()
 	{
+		if (basics.map.selectedUnit!=null)
 		if (basics.map.selectedUnit == gameObject && basics.LocalCheck() && player.isLocalPlayer)
 		{
 			if (movementActions > 0)

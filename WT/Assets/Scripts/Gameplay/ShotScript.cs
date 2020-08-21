@@ -20,6 +20,8 @@ public class ShotScript : MonoBehaviour
 		basics.speed = speed;
 		basics.turns = range/speed;
 
+		basics.timePerMove = FindObjectOfType<ManagementScript>().resultsTimer / speed;
+
 		player.Spawn(gameObject);
 	}
 
