@@ -22,4 +22,9 @@ public class TeamSelect : MonoBehaviour
 			image.GetComponent<RectTransform>().localScale = Vector3.one;
 		}
 	}
+
+	public void FindStart()
+	{
+		FindObjectOfType<ManagementScript>().GameStart();
+	}
 }

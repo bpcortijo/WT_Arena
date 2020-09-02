@@ -14,9 +14,9 @@ public class TileScript : MonoBehaviour {
 	public TileType.stairBottom stairBottom;
 	public MapMaker.Node node;
 
-	public int defendFloor, defendCeiling, defendNorth, defendWest, defendEast, defendSouth;
+	//public int defendFloor, defendCeiling, defendNorth, defendWest, defendEast, defendSouth;
 
-	public Dictionary<CharacterStats, string> defenders = new Dictionary<CharacterStats, string>();
+	//public Dictionary<CharacterStats, string> defenders = new Dictionary<CharacterStats, string>();
 
 	[HideInInspector]
 	public TileType tt;
@@ -132,13 +132,13 @@ public class TileScript : MonoBehaviour {
 
 	public void DefenceReset()
 	{
-		defendWest = 0;
-		defendEast = 0;
-		defendNorth = 0;
-		defendSouth = 0;
-		defendFloor = 0;
-		defendCeiling = 0;
-		defenders.Clear();
+		//defendWest = 0;
+		//defendEast = 0;
+		//defendNorth = 0;
+		//defendSouth = 0;
+		//defendFloor = 0;
+		//defendCeiling = 0;
+		//defenders.Clear();
 	}
 
 	public void CreateVisualShields (string dir)

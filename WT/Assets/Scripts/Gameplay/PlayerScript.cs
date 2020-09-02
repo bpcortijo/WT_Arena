@@ -100,7 +100,6 @@ public class PlayerScript : NetworkBehaviour
 		if (team.Count > 3)
 			if (!CheckFour() || team.Count > 4)
 				team.Remove(team[0]);
-
 	}
 
 	public void Spawn(GameObject go)

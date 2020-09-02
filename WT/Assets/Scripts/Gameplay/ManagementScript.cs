@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class ManagementScript : NetworkBehaviour {
 	MapMaker mapCode;
-	public GameObject map;
+	public GameObject map, mapPrefab;
 
 	public PlayerScript localPlayer;
 	public List<GameObject> players;
@@ -37,9 +37,13 @@ public class ManagementScript : NetworkBehaviour {
 		if (scene.name == "Game")
 			if (NetworkServer.active)
 			{
-				map = Instantiate(map);
+				map = Instantiate(mapPrefab);
 				mapCode = map.GetComponent<MapMaker>();
 				mapCode.gm = this;
+
+				foreach (UnitBasics unit in FindObjectsOfType<UnitBasics>())
+					Destroy(unit.gameObject);
+
 				foreach (PlayerScript player in FindObjectsOfType<PlayerScript>())
 				{
 					if (!players.Contains(player.gameObject))
@@ -48,6 +52,7 @@ public class ManagementScript : NetworkBehaviour {
 					player.GetComponent<PlayerScript>().map = mapCode;
 					player.GetComponent<PlayerScript>().num = players.IndexOf(player.gameObject);
 				}
+
 				NetworkServer.Spawn(map);
 
 				turnTime = turnTimer + 30f;
@@ -86,6 +91,12 @@ public class ManagementScript : NetworkBehaviour {
 		if (endTurnRequests == players.Count && endTurnRequests != 0 || turnTime <= 0)
 			if (!playResults)
 				TurnResults();
+
+		if (Input.GetKeyUp(KeyCode.R))
+			Rematch();
+
+		if (Input.GetKeyUp(KeyCode.B))
+			ReturnToMenu();
 	}
 
 	void TurnResults()
@@ -136,30 +147,30 @@ public class ManagementScript : NetworkBehaviour {
 	[ClientRpc]
 	public void RpcSendDef(string name, string dir)
 	{
-		TileScript tile = map.transform.Find(name).GetComponent<TileScript>();
-		switch (dir)
-		{
-			case "West":
-				tile.defendWest++;
-				break;
-			case "East":
-				tile.defendEast++;
-				break;
-			case "North":
-				tile.defendNorth++;
-				break;
-			case "South":
-				tile.defendSouth++;
-				break;
-			case "Floor":
-				tile.defendFloor++;
-				break;
-			case "Ceiling":
-				tile.defendCeiling++;
-				break;
-			default:
-				break;
-		}
+		//TileScript tile = map.transform.Find(name).GetComponent<TileScript>();
+		//switch (dir)
+		//{
+		//	case "West":
+		//		tile.defendWest++;
+		//		break;
+		//	case "East":
+		//		tile.defendEast++;
+		//		break;
+		//	case "North":
+		//		tile.defendNorth++;
+		//		break;
+		//	case "South":
+		//		tile.defendSouth++;
+		//		break;
+		//	case "Floor":
+		//		tile.defendFloor++;
+		//		break;
+		//	case "Ceiling":
+		//		tile.defendCeiling++;
+		//		break;
+		//	default:
+		//		break;
+		//}
 	}
 
 	float CheckForHit(ShotScript atk)
@@ -227,5 +238,20 @@ public class ManagementScript : NetworkBehaviour {
 		mapCode.characterPaths.Clear();
 		mapCode.attackPaths.Clear();
 		yield return new WaitForSeconds(1);
+	}
+
+	void Rematch()
+	{
+		NetworkManager.singleton.ServerChangeScene("Game");
+	}
+
+	void ReturnToMenu()
+	{
+		foreach (GameObject player in players)
+		{
+			player.GetComponent<PlayerScript>().units.Clear();
+			player.GetComponent<PlayerScript>().map=null;
+		}
+		NetworkManager.singleton.ServerChangeScene("TeamMenu");
 	}
 }

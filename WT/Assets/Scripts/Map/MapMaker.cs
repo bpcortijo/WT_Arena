@@ -683,35 +683,39 @@ public class MapMaker : NetworkBehaviour
 		{
 			if (newX == currentX)
 			{
-				if (newZ > currentZ && currentData.northViable && currentData.defendNorth < 3 && nextData.defendSouth < 3)
+				if (newZ > currentZ && currentData.northViable )
+					//&& currentData.defendNorth < 3 && nextData.defendSouth < 3)
 					return true;
-				if (newZ < currentZ && currentData.southViable && currentData.defendSouth < 3 && nextData.defendNorth < 3)
+				if (newZ < currentZ && currentData.southViable )
+					//&& currentData.defendSouth < 3 && nextData.defendNorth < 3)
 					return true;
 			}
 
 			if (newZ == currentZ)
 			{
-				if (newX < currentX && currentData.westViable && currentData.defendWest < 3 && nextData.defendEast < 3)
+				if (newX < currentX && currentData.westViable )
+					//&& currentData.defendWest < 3 && nextData.defendEast < 3)
 					return true;
-				if (newX > currentX && currentData.eastViable && currentData.defendEast < 3 && nextData.defendWest < 3)
+				if (newX > currentX && currentData.eastViable )
+					//&& currentData.defendEast < 3 && nextData.defendWest < 3)
 					return true;
 			}
 
-			if (newX < currentX && newZ > currentZ && currentData.northViable && currentData.westViable
-				&& nextData.southViable && nextData.eastViable && currentData.defendNorth < 3
-				&& currentData.defendWest < 3 && nextData.defendSouth < 3 && nextData.defendEast < 3)
+			if (newX < currentX && newZ > currentZ && currentData.northViable && currentData.westViable)
+				//&& nextData.southViable && nextData.eastViable && currentData.defendNorth < 3
+				//&& currentData.defendWest < 3 && nextData.defendSouth < 3 && nextData.defendEast < 3)
 				return true;
-			if (newX > currentX && newZ > currentZ && currentData.northViable && currentData.eastViable
-				&& nextData.southViable && nextData.westViable && currentData.defendNorth < 3
-				&& currentData.defendEast < 3 && nextData.defendSouth < 3 && nextData.defendWest < 3)
+			if (newX > currentX && newZ > currentZ && currentData.northViable && currentData.eastViable)
+				//&& nextData.southViable && nextData.westViable && currentData.defendNorth < 3
+				//&& currentData.defendEast < 3 && nextData.defendSouth < 3 && nextData.defendWest < 3)
 				return true;
-			if (newX < currentX && newZ < currentZ && currentData.southViable && currentData.westViable
-				&& nextData.northViable && nextData.eastViable && currentData.defendSouth < 3
-				&& currentData.defendWest < 3 && nextData.defendNorth < 3 && nextData.defendEast < 3)
+			if (newX < currentX && newZ < currentZ && currentData.southViable && currentData.westViable)
+				//&& nextData.northViable && nextData.eastViable && currentData.defendSouth < 3
+				//&& currentData.defendWest < 3 && nextData.defendNorth < 3 && nextData.defendEast < 3)
 				return true;
-			if (newX > currentX && newZ < currentZ && currentData.southViable && currentData.eastViable
-				&& nextData.northViable && nextData.westViable && currentData.defendSouth < 3
-				&& currentData.defendEast < 3 && nextData.defendNorth < 3 && nextData.defendWest < 3)
+			if (newX > currentX && newZ < currentZ && currentData.southViable && currentData.eastViable)
+				//&& nextData.northViable && nextData.westViable && currentData.defendSouth < 3
+				//&& currentData.defendEast < 3 && nextData.defendNorth < 3 && nextData.defendWest < 3)
 				return true;
 		}
 		return false;

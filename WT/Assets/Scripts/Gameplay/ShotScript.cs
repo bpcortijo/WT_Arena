@@ -50,42 +50,42 @@ public class ShotScript : MonoBehaviour
 
 	void ThroughWall(TileScript ts, string direction)
 	{
-		int priorPower = power;
+		//int priorPower = power;
 
-		switch (direction)
-		{
-			case "North":
-				power -= ts.defendNorth;
-				ts.defendNorth -= priorPower;
-				break;
-			case "West":
-				power -= ts.defendWest;
-				ts.defendWest -= priorPower;
-				break;
-			case "East":
-				power -= ts.defendEast;
-				ts.defendEast -= priorPower;
-				break;
-			case "South":
-				power -= ts.defendSouth;
-				ts.defendSouth -= priorPower;
-				break;
-			case "Up":
-				power -= ts.defendCeiling;
-				ts.defendCeiling -= priorPower;
-				break;
-			case "Down":
-				power -= ts.defendFloor;
-				ts.defendFloor -= priorPower;
-				break;
-		}
+		//switch (direction)
+		//{
+		//	case "North":
+		//		power -= ts.defendNorth;
+		//		ts.defendNorth -= priorPower;
+		//		break;
+		//	case "West":
+		//		power -= ts.defendWest;
+		//		ts.defendWest -= priorPower;
+		//		break;
+		//	case "East":
+		//		power -= ts.defendEast;
+		//		ts.defendEast -= priorPower;
+		//		break;
+		//	case "South":
+		//		power -= ts.defendSouth;
+		//		ts.defendSouth -= priorPower;
+		//		break;
+		//	case "Up":
+		//		power -= ts.defendCeiling;
+		//		ts.defendCeiling -= priorPower;
+		//		break;
+		//	case "Down":
+		//		power -= ts.defendFloor;
+		//		ts.defendFloor -= priorPower;
+		//		break;
+		//}
 
-		if (priorPower != power)
-			foreach (CharacterStats defender in ts.defenders.Keys)
-				if (ts.defenders[defender] == direction)
-					defender.freeShots++;
+		//if (priorPower != power)
+		//	foreach (CharacterStats defender in ts.defenders.Keys)
+		//		if (ts.defenders[defender] == direction)
+		//			defender.freeShots++;
 
-		Debug.Log("ThruWall");
+		//Debug.Log("ThruWall");
 	}
 
 	public void ShotClear()

@@ -9,12 +9,12 @@ public class CharacterStats : MonoBehaviour
 
 	public PlayerScript player;
 
-	public int speed, health, shot, ammo, defence = 2;
+	public int speed, health, shot, ammo;
 
 	//Perks
 	public bool fours = false, trust = false, quickstep = false, leadingShot = false, spare = false,
 				sprint = false, disengage = false, energyRepurpse = false, recon = false,
-				slowShot = false, longShot = false, meleeMaster = false, turtle = false;
+				slowShot = false, longShot = false, meleeMaster = false;
 
 	[HideInInspector]
 	public UnitBasics basics;
@@ -66,8 +66,6 @@ public class CharacterStats : MonoBehaviour
 		//else if (loadout.Contains("shotgun"))
 		//	vision += 4;
 
-		if (turtle)
-			defence = 1;
 		if (fours)
 			trust = true;
 		if (spare)
@@ -135,12 +133,6 @@ public class CharacterStats : MonoBehaviour
 
 			if (attacking)
 				attacking = false;
-
-			if (defending && defendingTiles.Count >= defence)
-			{
-				defending = false;
-				selectedTile = null;
-			}
 
 			if (Input.GetMouseButtonUp(1))
 				if (actions.Count > 0)
@@ -380,103 +372,103 @@ public class CharacterStats : MonoBehaviour
 
 	public void BlockTile(string direction)
 	{
-		actions.Add("Block");
-		defendingTiles.Add(selectedTile);
-		defendingDirections.Add(direction);
+		//actions.Add("Block");
+		//defendingTiles.Add(selectedTile);
+		//defendingDirections.Add(direction);
 
-		if (energyRepurpse)
-			selectedTile.defenders.Add(this, direction);
+		//if (energyRepurpse)
+		//	selectedTile.defenders.Add(this, direction);
 
-		switch (direction)
-		{
-			case "North":
-				if (turtle)
-				selectedTile.defendNorth+=3;
-				else
-					selectedTile.defendNorth++;
-				selectedTile.CreateVisualShields(direction);
-				break;
-			case "West":
-				if (turtle)
-					selectedTile.defendWest += 3;
-				else
-					selectedTile.defendWest++;
-				selectedTile.CreateVisualShields(direction);
-				break;
-			case "East":
-				if (turtle)
-					selectedTile.defendEast += 3;
-				else
-					selectedTile.defendEast++;
-				selectedTile.CreateVisualShields(direction);
-				break;
-			case "South":
-				if (turtle)
-					selectedTile.defendSouth += 3;
-				else
-					selectedTile.defendSouth++;
-				selectedTile.CreateVisualShields(direction);
-				break;
-			case "Up":
-				if (turtle)
-					selectedTile.defendCeiling += 3;
-				else
-					selectedTile.defendCeiling++;
-				selectedTile.CreateVisualShields(direction);
-				break;
-			case "Down":
-				if (turtle)
-					selectedTile.defendFloor += 3;
-				else
-					selectedTile.defendFloor++;
-				selectedTile.CreateVisualShields(direction);
-				break;
-			default:
-				break;
-		}
+		//switch (direction)
+		//{
+		//	case "North":
+		//		if (turtle)
+		//		selectedTile.defendNorth+=3;
+		//		else
+		//			selectedTile.defendNorth++;
+		//		selectedTile.CreateVisualShields(direction);
+		//		break;
+		//	case "West":
+		//		if (turtle)
+		//			selectedTile.defendWest += 3;
+		//		else
+		//			selectedTile.defendWest++;
+		//		selectedTile.CreateVisualShields(direction);
+		//		break;
+		//	case "East":
+		//		if (turtle)
+		//			selectedTile.defendEast += 3;
+		//		else
+		//			selectedTile.defendEast++;
+		//		selectedTile.CreateVisualShields(direction);
+		//		break;
+		//	case "South":
+		//		if (turtle)
+		//			selectedTile.defendSouth += 3;
+		//		else
+		//			selectedTile.defendSouth++;
+		//		selectedTile.CreateVisualShields(direction);
+		//		break;
+		//	case "Up":
+		//		if (turtle)
+		//			selectedTile.defendCeiling += 3;
+		//		else
+		//			selectedTile.defendCeiling++;
+		//		selectedTile.CreateVisualShields(direction);
+		//		break;
+		//	case "Down":
+		//		if (turtle)
+		//			selectedTile.defendFloor += 3;
+		//		else
+		//			selectedTile.defendFloor++;
+		//		selectedTile.CreateVisualShields(direction);
+		//		break;
+		//	default:
+		//		break;
+		//}
 	}
 
 	public void StopBlocking()
 	{
-		int i = defendingTiles.Count - 1;
-		switch (defendingDirections[i])
-		{
-			case "North":
-				defendingTiles[i].defendNorth--;
-				if (defendingTiles[i].defendNorth == 0)
-					defendingTiles[i].RemoveShield(defendingDirections[i]);
-				break;
-			case "West":
-				defendingTiles[i].defendWest--;
-				if (defendingTiles[i].defendWest == 0)
-					defendingTiles[i].RemoveShield(defendingDirections[i]);
-				break;
-			case "East":
-				defendingTiles[i].defendEast--;
-				if (defendingTiles[i].defendEast == 0)
-					defendingTiles[i].RemoveShield(defendingDirections[i]);
-				break;
-			case "South":
-				defendingTiles[i].defendSouth--;
-				if (defendingTiles[i].defendSouth == 0)
-					defendingTiles[i].RemoveShield(defendingDirections[i]);
-				break;
-			case "Up":
-				defendingTiles[i].defendCeiling--;
-				if (defendingTiles[i].defendCeiling == 0)
-					defendingTiles[i].RemoveShield(defendingDirections[i]);
-				break;
-			case "Down":
-				defendingTiles[i].defendFloor--;
-				if (defendingTiles[i].defendFloor == 0)
-					defendingTiles[i].RemoveShield(defendingDirections[i]);
-				break;
-			default:
-				break;
-		}
+		//int i = defendingTiles.Count - 1;
+		//switch (defendingDirections[i])
+		//{
+		//	case "North":
+		//		defendingTiles[i].defendNorth--;
+		//		if (defendingTiles[i].defendNorth == 0)
+		//			defendingTiles[i].RemoveShield(defendingDirections[i]);
+		//		break;
+		//	case "West":
+		//		defendingTiles[i].defendWest--;
+		//		if (defendingTiles[i].defendWest == 0)
+		//			defendingTiles[i].RemoveShield(defendingDirections[i]);
+		//		break;
+		//	case "East":
+		//		defendingTiles[i].defendEast--;
+		//		if (defendingTiles[i].defendEast == 0)
+		//			defendingTiles[i].RemoveShield(defendingDirections[i]);
+		//		break;
+		//	case "South":
+		//		defendingTiles[i].defendSouth--;
+		//		if (defendingTiles[i].defendSouth == 0)
+		//			defendingTiles[i].RemoveShield(defendingDirections[i]);
+		//		break;
+		//	case "Up":
+		//		defendingTiles[i].defendCeiling--;
+		//		if (defendingTiles[i].defendCeiling == 0)
+		//			defendingTiles[i].RemoveShield(defendingDirections[i]);
+		//		break;
+		//	case "Down":
+		//		defendingTiles[i].defendFloor--;
+		//		if (defendingTiles[i].defendFloor == 0)
+		//			defendingTiles[i].RemoveShield(defendingDirections[i]);
+		//		break;
+		//	default:
+		//		break;
+		//}
 
-		defendingTiles.RemoveAt(i);
-		defendingDirections.RemoveAt(i);
+		//defendingTiles.RemoveAt(i);
+		//defendingDirections.RemoveAt(i);
 	}
 
 	public void CancelAction(string act)
